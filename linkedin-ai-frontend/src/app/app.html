@@ -1,69 +1,172 @@
-<main class="layout">
-  <header>
-    <div>
-      <p class="eyebrow">LinkedIn AI</p>
-      <h1>Rédige et envoie tes messages LinkedIn avec l’IA.</h1>
-      <p class="lede">Définis la cible, l’objectif, le ton : on génère le message prêt à envoyer.</p>
+<!-- ── Toolbar ── -->
+<mat-toolbar class="toolbar">
+  <mat-icon class="brand-icon">smart_toy</mat-icon>
+  <span class="brand-name">LinkedIn AI</span>
+  <span class="spacer"></span>
+
+  @if (auth.isAuthenticated()) {
+    <div class="user-chip">
+      <div class="avatar">{{ userInitials }}</div>
+      <span class="user-email">{{ auth.user()?.['email'] }}</span>
     </div>
-    <div class="auth-box">
-      @if (isAuthenticated()) {
-        <p class="status ok">Connecte</p>
-        <button class="secondary" type="button" (click)="refreshSession()" [disabled]="authLoading()">
-          Refresh session
-        </button>
-        <button class="ghost" type="button" (click)="logout()">Logout</button>
-      } @else {
-        <input [value]="email()" (input)="email.set($any($event.target).value)" placeholder="Email" />
-        <input
-          [value]="password()"
-          (input)="password.set($any($event.target).value)"
-          placeholder="Mot de passe"
-          type="password"
-        />
-        <button class="primary" type="button" (click)="login()" [disabled]="authLoading()">
-          {{ authLoading() ? 'Connexion...' : 'Se connecter' }}
-        </button>
-      }
+    <button mat-icon-button (click)="logout()" matTooltip="Déconnexion" class="logout-btn">
+      <mat-icon>logout</mat-icon>
+    </button>
+  } @else {
+    <span class="not-connected">Non connecté</span>
+  }
+</mat-toolbar>
+
+<!-- ── Main layout ── -->
+<div class="page">
+
+  <!-- Auth card (si non connecté) -->
+  @if (!auth.isAuthenticated()) {
+    <div class="auth-overlay">
+      <mat-card class="auth-card">
+        <mat-card-content>
+          <div class="auth-header">
+            <div class="auth-icon-wrap">
+              <mat-icon>lock</mat-icon>
+            </div>
+            <h2>Connexion requise</h2>
+            <p>Connecte-toi via ton compte SaaS Hub pour utiliser LinkedIn AI.</p>
+          </div>
+
+          @if (auth.error()) {
+            <div class="error-banner">
+              <mat-icon>error_outline</mat-icon>
+              {{ auth.error() }}
+            </div>
+          }
+
+          <div class="auth-form">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Email</mat-label>
+              <mat-icon matPrefix>mail_outline</mat-icon>
+              <input matInput type="email" [value]="email()" (input)="email.set($any($event.target).value)" placeholder="ton@email.com" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Mot de passe</mat-label>
+              <mat-icon matPrefix>lock_outline</mat-icon>
+              <input matInput type="password" [value]="password()" (input)="password.set($any($event.target).value)" />
+            </mat-form-field>
+
+            <button mat-flat-button class="login-btn" (click)="login()" [disabled]="auth.loading()">
+              @if (auth.loading()) {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>login</mat-icon>
+              }
+              {{ auth.loading() ? 'Connexion...' : 'Se connecter' }}
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
-  </header>
-
-  @if (authError()) {
-    <p class="status error">{{ authError() }}</p>
-  }
-  @if (user()) {
-    <pre>{{ user() | json }}</pre>
   }
 
-  <section class="grid">
-    <article class="card">
-      <h3>Brief</h3>
-      <form (ngSubmit)="generate()">
-        <label>Destinataire
-          <input [(ngModel)]="form().recipient" name="recipient" placeholder="Ex: Marie, Head of Sales" />
-        </label>
-        <label>Objectif
-          <textarea [(ngModel)]="form().goal" name="goal" rows="3" placeholder="Proposer un call de 15 min la semaine prochaine."></textarea>
-        </label>
-        <label>Ton
-          <select [(ngModel)]="form().tone" name="tone">
-            <option value="professionnel">Professionnel</option>
-            <option value="chaleureux">Chaleureux</option>
-            <option value="direct">Direct</option>
-          </select>
-        </label>
-        <button class="primary" type="submit" [disabled]="loading() || !isAuthenticated()">
-          {{ loading() ? 'Génération...' : 'Générer' }}
-        </button>
-      </form>
-      @if (error()) {
-        <p class="status error">{{ error() }}</p>
-      }
-    </article>
+  <!-- App content (si connecté) -->
+  @if (auth.isAuthenticated()) {
+    <div class="workspace">
 
-    <article class="card output">
-      <h3>Message généré</h3>
-      <pre>{{ draft() || 'Le message généré apparaîtra ici.' }}</pre>
-    </article>
-  </section>
-</main>
+      <!-- Brief card -->
+      <mat-card class="brief-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="card-icon">edit_note</mat-icon>
+          <mat-card-title>Brief</mat-card-title>
+          <mat-card-subtitle>Décris ta cible et ton objectif</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Destinataire</mat-label>
+            <mat-icon matPrefix>person_outline</mat-icon>
+            <input matInput [value]="form().recipient"
+              (input)="form.set({...form(), recipient: $any($event.target).value})"
+              placeholder="Ex : Marie, Head of Sales chez Acme" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Objectif</mat-label>
+            <mat-icon matPrefix>flag_outlined</mat-icon>
+            <textarea matInput rows="3"
+              [value]="form().goal"
+              (input)="form.set({...form(), goal: $any($event.target).value})"
+              placeholder="Ex : Proposer un call de 15 min la semaine prochaine."></textarea>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Ton</mat-label>
+            <mat-icon matPrefix>tune</mat-icon>
+            <mat-select [value]="form().tone"
+              (selectionChange)="form.set({...form(), tone: $event.value})">
+              @for (t of tones; track t.value) {
+                <mat-option [value]="t.value">
+                  <mat-icon>{{ t.icon }}</mat-icon>
+                  {{ t.label }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-flat-button class="generate-btn" (click)="generate()" [disabled]="loading()">
+            @if (loading()) {
+              <mat-spinner diameter="18"></mat-spinner>
+            } @else {
+              <mat-icon>auto_awesome</mat-icon>
+            }
+            {{ loading() ? 'Génération...' : 'Générer le message' }}
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Output card -->
+      <mat-card class="output-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="card-icon">chat_bubble_outline</mat-icon>
+          <mat-card-title>Message généré</mat-card-title>
+          <mat-card-subtitle>Prêt à copier-coller sur LinkedIn</mat-card-subtitle>
+          @if (draft()) {
+            <span class="spacer"></span>
+            <button mat-icon-button (click)="copyDraft()" [matTooltip]="copied() ? 'Copié !' : 'Copier'" class="copy-btn">
+              <mat-icon>{{ copied() ? 'check_circle' : 'content_copy' }}</mat-icon>
+            </button>
+          }
+        </mat-card-header>
+
+        <mat-card-content>
+          @if (loading()) {
+            <div class="loading-state">
+              <mat-spinner diameter="36"></mat-spinner>
+              <p>Génération en cours…</p>
+            </div>
+          } @else if (draft()) {
+            <div class="draft-output">{{ draft() }}</div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>auto_awesome</mat-icon>
+              <p>Remplis le brief et clique sur <strong>Générer</strong>.</p>
+            </div>
+          }
+        </mat-card-content>
+
+        @if (draft()) {
+          <mat-card-actions>
+            <button mat-stroked-button (click)="copyDraft()">
+              <mat-icon>{{ copied() ? 'check_circle' : 'content_copy' }}</mat-icon>
+              {{ copied() ? 'Copié !' : 'Copier' }}
+            </button>
+          </mat-card-actions>
+        }
+      </mat-card>
+
+    </div>
+  }
+
+</div>
+
 <router-outlet></router-outlet>
