@@ -1,6 +1,5 @@
 import { Component, inject, computed, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +9,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../services/auth.service';
 
 interface StripePlan {
@@ -29,6 +29,11 @@ interface StripeSubscription {
   cancelAtPeriodEnd: boolean;
 }
 
+interface SubscriptionResponse {
+  subscription: StripeSubscription | null;
+  customerId: string;
+}
+
 interface StripeInvoice {
   id: string;
   number: string;
@@ -40,11 +45,15 @@ interface StripeInvoice {
   pdfUrl: string | null;
 }
 
+interface UrlResponse {
+  url: string;
+}
+
 @Component({
   standalone: true,
   selector: 'app-billing',
   imports: [
-    MatCardModule, MatButtonModule, MatIconModule,
+    MatCardModule, MatButtonModule, MatIconModule, MatTooltipModule,
     MatTableModule, MatChipsModule, MatProgressSpinnerModule, MatSnackBarModule,
   ],
   templateUrl: './billing.component.html',
@@ -54,15 +63,16 @@ export class BillingComponent {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
   private snack = inject(MatSnackBar);
-  private route = inject(ActivatedRoute);
 
   checkoutLoading = signal(false);
   portalLoading = signal(false);
 
-  private get headers() {
-    return this.auth.accessToken()
-      ? { authorization: `Bearer ${this.auth.accessToken()}` }
-      : {};
+  /** HttpHeaders avec Bearer token — toujours un objet valide */
+  private get authHeaders(): HttpHeaders {
+    const token = this.auth.accessToken();
+    return token
+      ? new HttpHeaders({ authorization: `Bearer ${token}` })
+      : new HttpHeaders();
   }
 
   // ── Ressources Stripe ─────────────────────────────────────────────────────
@@ -73,8 +83,8 @@ export class BillingComponent {
 
   readonly subscriptionResource = rxResource({
     stream: () =>
-      this.http.get<{ subscription: StripeSubscription | null }>('/api/billing/subscription', {
-        headers: this.headers,
+      this.http.get<SubscriptionResponse>('/api/billing/subscription', {
+        headers: this.authHeaders,
         withCredentials: true,
       }),
   });
@@ -82,7 +92,7 @@ export class BillingComponent {
   readonly invoicesResource = rxResource({
     stream: () =>
       this.http.get<StripeInvoice[]>('/api/billing/invoices', {
-        headers: this.headers,
+        headers: this.authHeaders,
         withCredentials: true,
       }),
   });
@@ -94,31 +104,31 @@ export class BillingComponent {
   );
 
   readonly subscription = computed<StripeSubscription | null>(() =>
-    this.subscriptionResource.value()?.subscription ?? null
+    (this.subscriptionResource.value() as SubscriptionResponse | undefined)?.subscription ?? null
   );
 
   readonly invoices = computed<StripeInvoice[]>(() =>
-    this.invoicesResource.error() ? [] : (this.invoicesResource.value() ?? [])
+    this.invoicesResource.error() ? [] : ((this.invoicesResource.value() as StripeInvoice[] | undefined) ?? [])
   );
 
-  readonly activePlanKey = computed(() => {
+  readonly activePlanKey = computed<string | null>(() => {
     const sub = this.subscription();
     if (!sub || sub.status !== 'active') return null;
-    const plan = this.plans().find(p => p.priceId === sub.priceId);
-    return plan?.key ?? null;
+    return this.plans().find(p => p.priceId === sub.priceId)?.key ?? null;
   });
 
   displayedColumns = ['number', 'date', 'amount', 'status', 'actions'];
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  async subscribe(priceId: string) {
+  async subscribe(priceId: string): Promise<void> {
     this.checkoutLoading.set(true);
     try {
       const res = await firstValueFrom(
-        this.http.post<{ url: string }>('/api/billing/checkout',
+        this.http.post<UrlResponse>(
+          '/api/billing/checkout',
           { priceId },
-          { headers: this.headers, withCredentials: true }
+          { headers: this.authHeaders, withCredentials: true }
         )
       );
       window.location.href = res.url;
@@ -129,17 +139,19 @@ export class BillingComponent {
     }
   }
 
-  async openPortal() {
+  async openPortal(): Promise<void> {
     this.portalLoading.set(true);
     try {
       const res = await firstValueFrom(
-        this.http.post<{ url: string }>('/api/billing/portal', {},
-          { headers: this.headers, withCredentials: true }
+        this.http.post<UrlResponse>(
+          '/api/billing/portal',
+          {},
+          { headers: this.authHeaders, withCredentials: true }
         )
       );
       window.location.href = res.url;
     } catch {
-      this.snack.open('Erreur lors de l\'ouverture du portail.', 'OK', { duration: 4000 });
+      this.snack.open("Erreur lors de l'ouverture du portail.", 'OK', { duration: 4000 });
     } finally {
       this.portalLoading.set(false);
     }
