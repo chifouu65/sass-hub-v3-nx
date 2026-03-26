@@ -1,14 +1,25 @@
 <div class="apps-page">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
   <div class="page-header">
     <div>
       <h1>Applications</h1>
       <p class="page-subtitle">Explore et gère tes applications SaaS.</p>
     </div>
-    @if (catalogResource.isLoading()) {
-      <mat-spinner diameter="24"></mat-spinner>
-    }
+    <mat-form-field class="search-field" appearance="outline" subscriptSizing="dynamic">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput placeholder="Rechercher une app…"
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)">
+      @if (searchQuery()) {
+        <button matSuffix mat-icon-button (click)="clearSearch()" aria-label="Effacer">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
   </div>
 
+  <!-- ── Erreur backend ────────────────────────────────────────────────── -->
   @if (catalogResource.error()) {
     <div class="error-banner">
       <mat-icon>wifi_off</mat-icon>
@@ -16,9 +27,12 @@
     </div>
   }
 
-  <mat-tab-group class="apps-tabs" animationDuration="200ms" [(selectedIndex)]="selectedTab">
+  <!-- ── Tabs ──────────────────────────────────────────────────────────── -->
+  <mat-tab-group class="apps-tabs" animationDuration="200ms"
+    [selectedIndex]="selectedTab()"
+    (selectedIndexChange)="selectedTab.set($event)">
 
-    <!-- Mes apps -->
+    <!-- ══ MES APPS ══════════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
         <mat-icon class="tab-icon">check_circle</mat-icon>
@@ -26,54 +40,92 @@
         <span class="tab-count">{{ activeApps().length }}</span>
       </ng-template>
 
-      <div class="apps-grid">
-        @for (app of activeApps(); track app.id) {
-          <mat-card class="app-card active" appearance="outlined">
-            <mat-card-content>
-              <div class="card-top">
-                <div class="app-icon" [style.background]="app.iconBg" [style.color]="app.iconColor">
-                  <mat-icon>{{ app.icon }}</mat-icon>
+      @if (isLoading()) {
+        <div class="loading-state"><mat-spinner diameter="28"></mat-spinner></div>
+      } @else {
+        <div class="apps-grid">
+          @for (app of filteredActiveApps(); track app.id) {
+            <mat-card class="app-card active" appearance="outlined">
+              <mat-card-content>
+                <!-- Top row -->
+                <div class="card-top">
+                  <div class="app-icon" [style.background]="app.iconBg" [style.color]="app.iconColor">
+                    <mat-icon>{{ app.icon }}</mat-icon>
+                  </div>
+                  <div class="card-badges">
+                    <span class="badge-active">
+                      <mat-icon>check</mat-icon> Actif
+                    </span>
+                    <span class="app-category">{{ app.category }}</span>
+                  </div>
                 </div>
-                <span class="badge-active">
-                  <mat-icon>check</mat-icon>
-                  Actif
-                </span>
-              </div>
-              <h3>{{ app.name }}</h3>
-              <p class="app-desc">{{ app.description }}</p>
-              <div class="plans-row">
-                @for (plan of app.plans; track plan) {
-                  <span class="plan-tag">{{ plan }}</span>
-                }
-              </div>
-              <div class="card-actions">
-                <a mat-flat-button [href]="app.url" target="_blank" class="action-open">
-                  <mat-icon>open_in_new</mat-icon>
-                  Ouvrir l'app
-                </a>
-                <button mat-icon-button class="action-settings" matTooltip="Paramètres">
-                  <mat-icon>tune</mat-icon>
-                </button>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        }
 
-        @empty {
-          <div class="empty-state">
-            <mat-icon>apps</mat-icon>
-            <h3>Aucune app active</h3>
-            <p>Abonne-toi à une app depuis le catalogue pour commencer.</p>
-            <button mat-flat-button class="cta-btn" (click)="selectedTab.set(1)">
-              Voir le catalogue
-              <mat-icon iconPositionEnd>arrow_forward</mat-icon>
-            </button>
-          </div>
-        }
-      </div>
+                <h3>{{ app.name }}</h3>
+                <p class="app-tagline">{{ app.tagline }}</p>
+
+                <div class="plans-row">
+                  @for (plan of app.plans; track plan) {
+                    <span class="plan-tag">{{ plan }}</span>
+                  }
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions class="card-actions">
+                <!-- Ouvrir -->
+                <button mat-flat-button class="action-open"
+                  [disabled]="app.url === '#'"
+                  (click)="launchApp(app)"
+                  matTooltip="{{ app.url === '#' ? 'App non encore disponible' : 'Ouvrir l\'application' }}">
+                  <mat-icon>open_in_new</mat-icon>
+                  Ouvrir
+                </button>
+
+                <!-- En savoir plus -->
+                <button mat-icon-button matTooltip="En savoir plus"
+                  (click)="openDetail(app)">
+                  <mat-icon>info_outline</mat-icon>
+                </button>
+
+                <!-- Se désabonner -->
+                <button mat-icon-button class="unsubscribe-btn"
+                  matTooltip="Se désabonner"
+                  [disabled]="loadingAppId() === app.id"
+                  (click)="unsubscribe(app.id)">
+                  @if (loadingAppId() === app.id) {
+                    <mat-spinner diameter="16"></mat-spinner>
+                  } @else {
+                    <mat-icon>remove_circle_outline</mat-icon>
+                  }
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          }
+
+          <!-- Résultat vide après recherche -->
+          @if (filteredActiveApps().length === 0 && searchQuery()) {
+            <div class="empty-state">
+              <mat-icon>search_off</mat-icon>
+              <h3>Aucun résultat pour "{{ searchQuery() }}"</h3>
+              <button mat-stroked-button (click)="clearSearch()">Effacer la recherche</button>
+            </div>
+          }
+
+          <!-- Vide sans recherche -->
+          @if (activeApps().length === 0 && !searchQuery()) {
+            <div class="empty-state">
+              <mat-icon>apps</mat-icon>
+              <h3>Aucune app active</h3>
+              <p>Abonne-toi à une app depuis le catalogue pour commencer.</p>
+              <button mat-flat-button class="cta-btn" (click)="selectedTab.set(1)">
+                Voir le catalogue <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
     </mat-tab>
 
-    <!-- Catalogue -->
+    <!-- ══ CATALOGUE ══════════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
         <mat-icon class="tab-icon">store</mat-icon>
@@ -81,35 +133,71 @@
         <span class="tab-count">{{ availableApps().length }}</span>
       </ng-template>
 
-      <div class="apps-grid">
-        @for (app of availableApps(); track app.id) {
-          <mat-card class="app-card" appearance="outlined">
-            <mat-card-content>
-              <div class="card-top">
-                <div class="app-icon" [style.background]="app.iconBg" [style.color]="app.iconColor">
-                  <mat-icon>{{ app.icon }}</mat-icon>
+      @if (isLoading()) {
+        <div class="loading-state"><mat-spinner diameter="28"></mat-spinner></div>
+      } @else {
+        <div class="apps-grid">
+          @for (app of filteredAvailableApps(); track app.id) {
+            <mat-card class="app-card" appearance="outlined"
+              [class.coming-soon]="app.comingSoon">
+              <mat-card-content>
+                <!-- Top row -->
+                <div class="card-top">
+                  <div class="app-icon" [style.background]="app.iconBg" [style.color]="app.iconColor">
+                    <mat-icon>{{ app.icon }}</mat-icon>
+                  </div>
+                  <div class="card-badges">
+                    @if (app.comingSoon) {
+                      <span class="badge-soon">
+                        <mat-icon>schedule</mat-icon> Bientôt
+                      </span>
+                    }
+                    <span class="app-category">{{ app.category }}</span>
+                  </div>
                 </div>
-              </div>
-              <h3>{{ app.name }}</h3>
-              <p class="app-desc">{{ app.description }}</p>
-              <div class="plans-row">
-                @for (plan of app.plans; track plan) {
-                  <span class="plan-tag">{{ plan }}</span>
-                }
-              </div>
-              <div class="card-actions">
-                <button mat-flat-button class="action-subscribe">
-                  <mat-icon>add</mat-icon>
-                  S'abonner
+
+                <h3>{{ app.name }}</h3>
+                <p class="app-tagline">{{ app.tagline }}</p>
+
+                <div class="plans-row">
+                  @for (plan of app.plans; track plan) {
+                    <span class="plan-tag">{{ plan }}</span>
+                  }
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions class="card-actions">
+                <!-- S'abonner -->
+                <button mat-flat-button class="action-subscribe"
+                  [disabled]="loadingAppId() === app.id || !!app.comingSoon"
+                  (click)="subscribe(app.id)">
+                  @if (loadingAppId() === app.id) {
+                    <mat-spinner diameter="16"></mat-spinner>
+                  } @else {
+                    <mat-icon>add</mat-icon>
+                  }
+                  {{ app.comingSoon ? 'Bientôt disponible' : 'S\'abonner' }}
                 </button>
-                <button mat-stroked-button class="action-info">
-                  En savoir plus
+
+                <!-- En savoir plus -->
+                <button mat-icon-button matTooltip="En savoir plus"
+                  (click)="openDetail(app)">
+                  <mat-icon>info_outline</mat-icon>
                 </button>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        }
-      </div>
+              </mat-card-actions>
+            </mat-card>
+          }
+
+          <!-- Résultat vide après recherche -->
+          @if (filteredAvailableApps().length === 0 && searchQuery()) {
+            <div class="empty-state" style="grid-column: 1/-1">
+              <mat-icon>search_off</mat-icon>
+              <h3>Aucun résultat pour "{{ searchQuery() }}"</h3>
+              <button mat-stroked-button (click)="clearSearch()">Effacer la recherche</button>
+            </div>
+          }
+        </div>
+      }
     </mat-tab>
 
   </mat-tab-group>

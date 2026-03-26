@@ -5,24 +5,102 @@ export interface AppDescriptor {
   name: string;
   tagline: string;
   description: string;
+  features: string[];
   plans: string[];
+  category: string;
   url: string;
+  comingSoon?: boolean;
 }
 
 @Injectable()
 export class CatalogService {
-  private apps: AppDescriptor[] = [
+  private readonly apps: AppDescriptor[] = [
     {
       id: 'linkedin-ai',
       name: 'LinkedIn AI Messaging',
-      tagline: 'Automate LinkedIn outreach with AI-crafted messages.',
-      description: 'Plan, generate, and send LinkedIn messages with guardrails.',
+      tagline: 'Automatise ta prospection LinkedIn avec l\'IA',
+      description: 'Génère des messages LinkedIn personnalisés, planifie des campagnes multi-étapes et suis les réponses automatiquement grâce à l\'IA.',
+      features: [
+        'Génération de messages IA personnalisés',
+        'Campagnes de prospection multi-étapes',
+        'Suivi des réponses en temps réel',
+        'Templates intelligents par secteur',
+      ],
       plans: ['free', 'pro', 'team'],
-      url: 'https://linkedin-ai.example.com',
+      category: 'Marketing',
+      url: 'http://localhost:4300',
+    },
+    {
+      id: 'invoicing',
+      name: 'Facturation',
+      tagline: 'Factures professionnelles en un clic',
+      description: 'Crée, envoie et suis tes factures clients. Intégration Stripe native, export PDF et relances automatiques pour ne jamais oublier un paiement.',
+      features: [
+        'Création et envoi de factures',
+        'Intégration Stripe & paiement en ligne',
+        'Export PDF professionnel',
+        'Relances automatiques',
+        'Tableau de bord revenus',
+      ],
+      plans: ['free', 'pro'],
+      category: 'Finance',
+      url: '#',
+    },
+    {
+      id: 'analytics',
+      name: 'Analytics',
+      tagline: 'Métriques et tableaux de bord en temps réel',
+      description: 'Visualise les performances de toutes tes apps avec des dashboards interactifs, des alertes configurables et des rapports exportables.',
+      features: [
+        'Dashboards temps réel',
+        'Alertes et seuils configurables',
+        'Export CSV & API',
+        'Intégration multi-sources',
+        'Rapports automatisés',
+      ],
+      plans: ['pro', 'team'],
+      category: 'Data',
+      url: '#',
+    },
+    {
+      id: 'crm',
+      name: 'CRM',
+      tagline: 'Gestion de contacts et pipeline de vente',
+      description: 'Centralise tes prospects, suis toutes les interactions clients et automatise ton pipeline de vente avec des workflows intelligents.',
+      features: [
+        'Pipeline Kanban visuel',
+        'Historique complet des interactions',
+        'Automatisations et workflows',
+        'Import/Export contacts CSV',
+        'Scoring des leads',
+      ],
+      plans: ['free', 'pro', 'team'],
+      category: 'Sales',
+      url: '#',
+    },
+    {
+      id: 'scheduler',
+      name: 'Planificateur',
+      tagline: 'Agenda intelligent et gestion du temps',
+      description: 'Synchronise tes calendriers, planifie des réunions sans friction et optimise ton temps avec des suggestions IA.',
+      features: [
+        'Synchronisation Google & Outlook',
+        'Liens de prise de RDV automatique',
+        'Suggestions IA de créneaux',
+        'Rappels et notifications',
+      ],
+      plans: ['pro', 'team'],
+      category: 'Productivité',
+      url: '#',
+      comingSoon: true,
     },
   ];
 
   list(): AppDescriptor[] {
     return this.apps;
+  }
+
+  findById(id: string): AppDescriptor | undefined {
+    return this.apps.find(a => a.id === id);
   }
 }
