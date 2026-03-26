@@ -10,7 +10,7 @@ import cookieParser from 'cookie-parser';
 import { loadAuthConfig } from './app/auth/auth.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const globalPrefix = 'api';
   const cfg = loadAuthConfig();
 

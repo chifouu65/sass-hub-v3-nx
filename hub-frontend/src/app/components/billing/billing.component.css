@@ -18,7 +18,20 @@
   font-size: 0.95rem;
 }
 
-/* Plan card */
+/* Loading */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+}
+
+.no-sub-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+/* Plan actif */
 .plan-card {
   background: var(--bg-card) !important;
   border-color: var(--border) !important;
@@ -84,6 +97,168 @@
 .cancel-btn {
   color: var(--danger) !important;
   border-color: var(--danger-muted) !important;
+}
+
+/* Status row */
+.plan-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.88rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.status-dot.active {
+  background: var(--success);
+}
+
+.cancel-notice {
+  color: var(--warning);
+  font-size: 0.82rem;
+}
+
+/* Plans grid */
+.plans-section {
+  margin-top: 36px;
+}
+
+.plans-section h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.plan-option-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  transition: border-color 150ms ease;
+}
+
+.plan-option-card.current-plan {
+  border-color: var(--accent) !important;
+}
+
+.plan-option-card mat-card-content {
+  padding: 20px !important;
+}
+
+.plan-option-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.plan-option-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.plan-option-icon mat-icon {
+  color: var(--accent);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.plan-option-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.plan-option-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.plan-period {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.current-badge {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: var(--accent-muted);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-features li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.plan-features li mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--success);
+}
+
+.subscribe-btn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-radius: var(--radius-sm) !important;
+  font-weight: 600 !important;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 16px 12px !important;
+}
+
+/* Empty invoices */
+.empty-invoices {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.empty-invoices mat-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 12px;
 }
 
 /* Invoices */

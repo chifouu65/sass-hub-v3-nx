@@ -4,66 +4,156 @@
     <p class="page-subtitle">Gère ton abonnement et consulte tes factures.</p>
   </div>
 
-  <!-- Current plan -->
+  <!-- Abonnement actif -->
   <div class="plan-section">
-    <mat-card class="plan-card" appearance="outlined">
-      <mat-card-content>
-        <div class="plan-info">
-          <div>
-            <span class="plan-badge">{{ currentPlan().name }}</span>
-            <div class="plan-price">
-              <span class="price">{{ currentPlan().price }}€</span>
-              <span class="period">{{ currentPlan().period }}</span>
+    @if (subscriptionResource.isLoading()) {
+      <div class="loading-state"><mat-spinner diameter="28"></mat-spinner></div>
+    } @else if (subscription()) {
+      <mat-card class="plan-card" appearance="outlined">
+        <mat-card-content>
+          <div class="plan-info">
+            <div>
+              <span class="plan-badge">{{ subscription()!.planName }}</span>
+              <div class="plan-status-row">
+                <span class="status-dot" [class.active]="subscription()!.status === 'active'"></span>
+                <span class="status-label">{{ subscription()!.status === 'active' ? 'Actif' : subscription()!.status }}</span>
+                @if (subscription()!.cancelAtPeriodEnd) {
+                  <span class="cancel-notice">· Annulation à la fin de la période</span>
+                }
+              </div>
+              <p class="plan-detail">
+                Prochain renouvellement : {{ formatDate(subscription()!.currentPeriodEnd) }}
+              </p>
             </div>
-            <p class="plan-detail">Jusqu'à {{ currentPlan().apps }} apps &middot; Prochain renouvellement le {{ currentPlan().renewDate }}</p>
+            <div class="plan-actions">
+              <button mat-stroked-button (click)="openPortal()" [disabled]="portalLoading()">
+                @if (portalLoading()) { <mat-spinner diameter="16"></mat-spinner> }
+                @else { <mat-icon>settings</mat-icon> }
+                Gérer l'abonnement
+              </button>
+            </div>
           </div>
-          <div class="plan-actions">
-            <button mat-stroked-button>Changer de plan</button>
-            <button mat-stroked-button class="cancel-btn">Annuler</button>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <!-- Pas d'abonnement actif : afficher les plans -->
+      <p class="no-sub-label">Aucun abonnement actif. Choisissez un plan ci-dessous.</p>
+    }
   </div>
 
-  <!-- Invoices -->
+  <!-- Plans disponibles -->
+  @if (!subscriptionResource.isLoading()) {
+    <div class="plans-section">
+      <h2>Nos plans</h2>
+      <div class="plans-grid">
+        @if (plansResource.isLoading()) {
+          <div class="loading-state"><mat-spinner diameter="28"></mat-spinner></div>
+        }
+        @for (plan of plans(); track plan.key) {
+          <mat-card class="plan-option-card" appearance="outlined"
+            [class.current-plan]="activePlanKey() === plan.key">
+            <mat-card-content>
+              <div class="plan-option-header">
+                <div class="plan-option-icon">
+                  <mat-icon>{{ planIcon(plan.key) }}</mat-icon>
+                </div>
+                <div>
+                  <div class="plan-option-name">{{ plan.name }}</div>
+                  <div class="plan-option-price">
+                    {{ formatPlanAmount(plan.amount) }}
+                    @if (plan.amount > 0) { <span class="plan-period">/mois</span> }
+                  </div>
+                </div>
+                @if (activePlanKey() === plan.key) {
+                  <span class="current-badge">Actuel</span>
+                }
+              </div>
+              <ul class="plan-features">
+                @for (f of plan.features; track f) {
+                  <li><mat-icon>check_circle</mat-icon> {{ f }}</li>
+                }
+              </ul>
+            </mat-card-content>
+            <mat-card-actions>
+              @if (activePlanKey() === plan.key) {
+                <button mat-stroked-button disabled>Plan actuel</button>
+              } @else if (plan.amount === 0) {
+                <button mat-stroked-button disabled>Gratuit</button>
+              } @else {
+                <button mat-flat-button class="subscribe-btn"
+                  (click)="subscribe(plan.priceId)"
+                  [disabled]="checkoutLoading()">
+                  @if (checkoutLoading()) { <mat-spinner diameter="16"></mat-spinner> }
+                  @else { <mat-icon>credit_card</mat-icon> }
+                  S'abonner
+                </button>
+              }
+            </mat-card-actions>
+          </mat-card>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Factures -->
   <div class="invoices-section">
     <h2>Historique des factures</h2>
 
-    <mat-card appearance="outlined" class="table-card">
-      <table mat-table [dataSource]="invoices()" class="invoices-table">
-        <ng-container matColumnDef="id">
-          <th mat-header-cell *matHeaderCellDef>N°</th>
-          <td mat-cell *matCellDef="let inv">{{ inv.id }}</td>
-        </ng-container>
+    @if (invoicesResource.isLoading()) {
+      <div class="loading-state"><mat-spinner diameter="28"></mat-spinner></div>
+    } @else if (invoices().length === 0) {
+      <div class="empty-invoices">
+        <mat-icon>receipt_long</mat-icon>
+        <p>Aucune facture pour le moment.</p>
+      </div>
+    } @else {
+      <mat-card appearance="outlined" class="table-card">
+        <table mat-table [dataSource]="invoices()" class="invoices-table">
 
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let inv">{{ inv.date }}</td>
-        </ng-container>
+          <ng-container matColumnDef="number">
+            <th mat-header-cell *matHeaderCellDef>N°</th>
+            <td mat-cell *matCellDef="let inv">{{ inv.number }}</td>
+          </ng-container>
 
-        <ng-container matColumnDef="app">
-          <th mat-header-cell *matHeaderCellDef>Application</th>
-          <td mat-cell *matCellDef="let inv">{{ inv.app }}</td>
-        </ng-container>
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let inv">{{ formatDate(inv.created) }}</td>
+          </ng-container>
 
-        <ng-container matColumnDef="amount">
-          <th mat-header-cell *matHeaderCellDef>Montant</th>
-          <td mat-cell *matCellDef="let inv">{{ inv.amount }}</td>
-        </ng-container>
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef>Montant</th>
+            <td mat-cell *matCellDef="let inv">{{ formatAmount(inv.amount, inv.currency) }}</td>
+          </ng-container>
 
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Statut</th>
-          <td mat-cell *matCellDef="let inv">
-            <span class="status-chip" [class]="'status-' + inv.status">
-              {{ inv.status === 'paid' ? 'Payé' : inv.status === 'pending' ? 'En attente' : 'En retard' }}
-            </span>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let inv">
+              <span class="status-chip" [class]="'status-' + inv.status">
+                {{ inv.status === 'paid' ? 'Payé' : inv.status === 'open' ? 'En attente' : inv.status }}
+              </span>
+            </td>
+          </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-    </mat-card>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let inv">
+              @if (inv.pdfUrl) {
+                <a [href]="inv.pdfUrl" target="_blank" mat-icon-button matTooltip="Télécharger PDF">
+                  <mat-icon>picture_as_pdf</mat-icon>
+                </a>
+              }
+              @if (inv.hostedUrl) {
+                <a [href]="inv.hostedUrl" target="_blank" mat-icon-button matTooltip="Voir la facture">
+                  <mat-icon>open_in_new</mat-icon>
+                </a>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </mat-card>
+    }
   </div>
 </div>
