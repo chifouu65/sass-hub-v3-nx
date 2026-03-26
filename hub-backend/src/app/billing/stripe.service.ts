@@ -60,10 +60,6 @@ export class StripeService {
     return key;
   }
 
-  private get webhookSecret(): string {
-    return process.env.STRIPE_WEBHOOK_SECRET ?? '';
-  }
-
   // ── Helpers HTTP ────────────────────────────────────────────────────────────
 
   private async stripeGet<T>(path: string): Promise<T> {
@@ -109,7 +105,7 @@ export class StripeService {
     // Créer un nouveau client
     const customer = await this.stripePost<any>('/customers', {
       email,
-      metadata: { userId },
+      'metadata[userId]': userId,
     });
     this.customerMap.set(userId, customer.id);
     return customer.id;
@@ -182,30 +178,91 @@ export class StripeService {
     return session.url;
   }
 
+  // ── Annulation / Réactivation ────────────────────────────────────────────────
+
+  /**
+   * Annule l'abonnement à la fin de la période en cours (accès conservé jusqu'à la date de fin).
+   * Pour une annulation immédiate, utiliser le portail Stripe.
+   */
+  async cancelSubscription(subscriptionId: string): Promise<StripeSubscription | null> {
+    const sub = await this.stripePost<any>(`/subscriptions/${subscriptionId}`, {
+      cancel_at_period_end: 'true',
+    });
+    return this.mapSubscription(sub);
+  }
+
+  /**
+   * Réactive un abonnement dont l'annulation a été programmée (annule le cancel_at_period_end).
+   */
+  async reactivateSubscription(subscriptionId: string): Promise<StripeSubscription | null> {
+    const sub = await this.stripePost<any>(`/subscriptions/${subscriptionId}`, {
+      cancel_at_period_end: 'false',
+    });
+    return this.mapSubscription(sub);
+  }
+
+  private mapSubscription(sub: any): StripeSubscription {
+    const priceId = sub.items?.data?.[0]?.price?.id ?? '';
+    const plan = Object.values(STRIPE_PLANS).find(p => p.priceId === priceId);
+    return {
+      id: sub.id,
+      status: sub.status,
+      planName: plan?.name ?? 'Inconnu',
+      priceId,
+      currentPeriodEnd: sub.current_period_end,
+      cancelAtPeriodEnd: sub.cancel_at_period_end,
+    };
+  }
+
   // ── Webhook ─────────────────────────────────────────────────────────────────
 
-  async handleWebhookEvent(rawBody: Buffer, signature: string): Promise<void> {
-    // Vérification basique de la signature (optionnel en dev sans webhookSecret)
+  async handleWebhookEvent(rawBody: Buffer, _signature: string): Promise<void> {
     let event: any;
     try {
       event = JSON.parse(rawBody.toString());
     } catch {
       throw new Error('Invalid webhook payload');
     }
+
+    const obj = event.data?.object;
     this.logger.log(`Stripe event: ${event.type}`);
 
     switch (event.type) {
       case 'customer.subscription.created':
+        this.logger.log(`Subscription créé: ${obj?.id} — status: ${obj?.status}`);
+        break;
+
       case 'customer.subscription.updated':
+        this.logger.log(`Subscription mis à jour: ${obj?.id} — status: ${obj?.status} — cancel_at_period_end: ${obj?.cancel_at_period_end}`);
+        break;
+
       case 'customer.subscription.deleted':
-        this.logger.log(`Subscription ${event.type}: ${event.data.object.id}`);
+        // Le statut passe à 'canceled' — l'accès doit être révoqué
+        this.logger.warn(`Subscription annulé: ${obj?.id} — customer: ${obj?.customer}`);
+        // TODO prod: marquer l'utilisateur comme sans abonnement en base de données
         break;
+
       case 'invoice.payment_succeeded':
-        this.logger.log(`Invoice paid: ${event.data.object.id}`);
+        this.logger.log(`Paiement réussi — invoice: ${obj?.id} — montant: ${obj?.amount_paid} ${obj?.currency}`);
         break;
-      case 'invoice.payment_failed':
-        this.logger.warn(`Invoice payment failed: ${event.data.object.id}`);
+
+      case 'invoice.payment_failed': {
+        // Stripe retentera automatiquement (Smart Retries).
+        // Après N tentatives, il passera le statut à 'unpaid' ou annulera selon la config Dunning.
+        const attempt = obj?.attempt_count ?? 1;
+        this.logger.warn(
+          `Paiement échoué — invoice: ${obj?.id} — tentative n°${attempt} — customer: ${obj?.customer}`,
+        );
+        // TODO prod: envoyer un email à l'utilisateur et marquer le compte en past_due
         break;
+      }
+
+      case 'invoice.payment_action_required':
+        this.logger.warn(`Action requise (3D Secure ?) — invoice: ${obj?.id}`);
+        break;
+
+      default:
+        this.logger.debug(`Événement non géré: ${event.type}`);
     }
   }
 }

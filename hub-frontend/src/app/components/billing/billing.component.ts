@@ -66,6 +66,8 @@ export class BillingComponent {
 
   checkoutLoading = signal(false);
   portalLoading = signal(false);
+  cancelLoading = signal(false);
+  reactivateLoading = signal(false);
 
   /** HttpHeaders avec Bearer token — toujours un objet valide */
   private get authHeaders(): HttpHeaders {
@@ -139,6 +141,40 @@ export class BillingComponent {
     }
   }
 
+  async cancelPlan(): Promise<void> {
+    this.cancelLoading.set(true);
+    try {
+      await firstValueFrom(
+        this.http.post('/api/billing/cancel', {}, {
+          headers: this.authHeaders, withCredentials: true,
+        })
+      );
+      this.subscriptionResource.reload();
+      this.snack.open('Abonnement annulé — accès conservé jusqu\'à la fin de la période.', 'OK', { duration: 5000 });
+    } catch {
+      this.snack.open('Erreur lors de l\'annulation.', 'OK', { duration: 4000 });
+    } finally {
+      this.cancelLoading.set(false);
+    }
+  }
+
+  async reactivatePlan(): Promise<void> {
+    this.reactivateLoading.set(true);
+    try {
+      await firstValueFrom(
+        this.http.post('/api/billing/reactivate', {}, {
+          headers: this.authHeaders, withCredentials: true,
+        })
+      );
+      this.subscriptionResource.reload();
+      this.snack.open('Abonnement réactivé avec succès.', 'OK', { duration: 4000 });
+    } catch {
+      this.snack.open('Erreur lors de la réactivation.', 'OK', { duration: 4000 });
+    } finally {
+      this.reactivateLoading.set(false);
+    }
+  }
+
   async openPortal(): Promise<void> {
     this.portalLoading.set(true);
     try {
@@ -182,5 +218,37 @@ export class BillingComponent {
       team: 'groups',
     };
     return icons[key] ?? 'star';
+  }
+
+  /** Ordre des tiers : plus le chiffre est grand, plus le plan est élevé */
+  private readonly PLAN_ORDER: Record<string, number> = {
+    free: 0,
+    pro: 1,
+    team: 2,
+  };
+
+  /**
+   * Retourne l'état d'un plan par rapport à l'abonnement actif :
+   * - 'current'   → c'est le plan actif
+   * - 'upgrade'   → tier supérieur au plan actif (ou pas d'abonnement)
+   * - 'downgrade' → tier inférieur au plan actif
+   * - 'free'      → plan gratuit sans abonnement actif
+   */
+  planState(key: string): 'current' | 'upgrade' | 'downgrade' | 'free' {
+    const active = this.activePlanKey();
+
+    if (active === key) return 'current';
+
+    // Pas d'abonnement actif
+    if (!active) {
+      const plan = this.plans().find(p => p.key === key);
+      return plan?.amount === 0 ? 'free' : 'upgrade';
+    }
+
+    const activeOrder = this.PLAN_ORDER[active] ?? 0;
+    const targetOrder = this.PLAN_ORDER[key] ?? 0;
+
+    if (targetOrder === 0) return 'downgrade'; // Free quand on a un abonnement payant
+    return targetOrder > activeOrder ? 'upgrade' : 'downgrade';
   }
 }

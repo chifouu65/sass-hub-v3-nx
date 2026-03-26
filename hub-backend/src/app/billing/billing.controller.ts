@@ -1,8 +1,8 @@
 import {
-  Controller, Get, Post, Body, Req, Res,
+  Controller, Get, Post, Body, Req,
   Headers, RawBodyRequest, HttpCode,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { StripeService, STRIPE_PLANS } from './stripe.service';
 import { Public } from '../auth/public.decorator';
 
@@ -77,6 +77,28 @@ export class BillingController {
       'http://localhost:4200/billing',
     );
     return { url };
+  }
+
+  // ── Annuler l'abonnement (cancel à fin de période) ────────────────────────
+  @Post('cancel')
+  async cancelSubscription(@Req() req: AuthenticatedRequest) {
+    const userId = req.user?.sub ?? '';
+    const email = req.user?.['email'] as string ?? '';
+    const customerId = await this.stripe.getOrCreateCustomer(userId, email);
+    const sub = await this.stripe.getSubscription(customerId);
+    if (!sub) return { error: 'Aucun abonnement actif' };
+    return this.stripe.cancelSubscription(sub.id);
+  }
+
+  // ── Réactiver un abonnement annulé (undo cancel_at_period_end) ────────────
+  @Post('reactivate')
+  async reactivateSubscription(@Req() req: AuthenticatedRequest) {
+    const userId = req.user?.sub ?? '';
+    const email = req.user?.['email'] as string ?? '';
+    const customerId = await this.stripe.getOrCreateCustomer(userId, email);
+    const sub = await this.stripe.getSubscription(customerId);
+    if (!sub) return { error: 'Aucun abonnement actif' };
+    return this.stripe.reactivateSubscription(sub.id);
   }
 
   // ── Webhook Stripe (public, pas de JWT) ───────────────────────────────────

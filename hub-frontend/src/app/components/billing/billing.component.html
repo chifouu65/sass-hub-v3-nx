@@ -9,27 +9,72 @@
     @if (subscriptionResource.isLoading()) {
       <div class="loading-state"><mat-spinner diameter="28"></mat-spinner></div>
     } @else if (subscription()) {
-      <mat-card class="plan-card" appearance="outlined">
+      <!-- Bandeau warning paiement échoué -->
+      @if (subscription()!.status === 'past_due' || subscription()!.status === 'unpaid') {
+        <div class="payment-warning">
+          <mat-icon>warning</mat-icon>
+          <span>
+            @if (subscription()!.status === 'past_due') {
+              Paiement en échec — Stripe retentera automatiquement. Mettez à jour votre moyen de paiement si nécessaire.
+            } @else {
+              Abonnement impayé — votre accès peut être restreint. Régularisez votre situation.
+            }
+          </span>
+          <button mat-stroked-button class="warning-btn" (click)="openPortal()">
+            <mat-icon>credit_card</mat-icon> Mettre à jour
+          </button>
+        </div>
+      }
+
+      <mat-card class="plan-card" appearance="outlined"
+        [class.plan-card--warning]="subscription()!.status === 'past_due' || subscription()!.status === 'unpaid'"
+        [class.plan-card--canceled]="subscription()!.cancelAtPeriodEnd">
         <mat-card-content>
           <div class="plan-info">
             <div>
               <span class="plan-badge">{{ subscription()!.planName }}</span>
               <div class="plan-status-row">
-                <span class="status-dot" [class.active]="subscription()!.status === 'active'"></span>
-                <span class="status-label">{{ subscription()!.status === 'active' ? 'Actif' : subscription()!.status }}</span>
-                @if (subscription()!.cancelAtPeriodEnd) {
-                  <span class="cancel-notice">· Annulation à la fin de la période</span>
-                }
+                <span class="status-dot"
+                  [class.active]="subscription()!.status === 'active' && !subscription()!.cancelAtPeriodEnd"
+                  [class.warning]="subscription()!.status === 'past_due' || subscription()!.status === 'unpaid'"
+                  [class.canceled]="subscription()!.cancelAtPeriodEnd">
+                </span>
+                <span class="status-label">
+                  @if (subscription()!.cancelAtPeriodEnd) { Annulation programmée }
+                  @else if (subscription()!.status === 'active') { Actif }
+                  @else if (subscription()!.status === 'past_due') { Paiement en échec }
+                  @else if (subscription()!.status === 'unpaid') { Impayé }
+                  @else { {{ subscription()!.status }} }
+                </span>
               </div>
               <p class="plan-detail">
-                Prochain renouvellement : {{ formatDate(subscription()!.currentPeriodEnd) }}
+                @if (subscription()!.cancelAtPeriodEnd) {
+                  Accès jusqu'au : {{ formatDate(subscription()!.currentPeriodEnd) }}
+                } @else {
+                  Prochain renouvellement : {{ formatDate(subscription()!.currentPeriodEnd) }}
+                }
               </p>
             </div>
             <div class="plan-actions">
+              @if (subscription()!.cancelAtPeriodEnd) {
+                <button mat-flat-button class="reactivate-btn"
+                  (click)="reactivatePlan()" [disabled]="reactivateLoading()">
+                  @if (reactivateLoading()) { <mat-spinner diameter="16"></mat-spinner> }
+                  @else { <mat-icon>refresh</mat-icon> }
+                  Réactiver
+                </button>
+              } @else if (subscription()!.status === 'active') {
+                <button mat-stroked-button class="cancel-plan-btn"
+                  (click)="cancelPlan()" [disabled]="cancelLoading()">
+                  @if (cancelLoading()) { <mat-spinner diameter="16"></mat-spinner> }
+                  @else { <mat-icon>cancel</mat-icon> }
+                  Annuler le plan
+                </button>
+              }
               <button mat-stroked-button (click)="openPortal()" [disabled]="portalLoading()">
                 @if (portalLoading()) { <mat-spinner diameter="16"></mat-spinner> }
                 @else { <mat-icon>settings</mat-icon> }
-                Gérer l'abonnement
+                Gérer
               </button>
             </div>
           </div>
@@ -75,18 +120,31 @@
               </ul>
             </mat-card-content>
             <mat-card-actions>
-              @if (activePlanKey() === plan.key) {
-                <button mat-stroked-button disabled>Plan actuel</button>
-              } @else if (plan.amount === 0) {
-                <button mat-stroked-button disabled>Gratuit</button>
-              } @else {
-                <button mat-flat-button class="subscribe-btn"
-                  (click)="subscribe(plan.priceId)"
-                  [disabled]="checkoutLoading()">
-                  @if (checkoutLoading()) { <mat-spinner diameter="16"></mat-spinner> }
-                  @else { <mat-icon>credit_card</mat-icon> }
-                  S'abonner
-                </button>
+              @switch (planState(plan.key)) {
+                @case ('current') {
+                  <button mat-stroked-button disabled>Plan actuel</button>
+                }
+                @case ('free') {
+                  <button mat-stroked-button disabled>Gratuit</button>
+                }
+                @case ('downgrade') {
+                  <button mat-stroked-button class="downgrade-btn"
+                    (click)="openPortal()"
+                    [disabled]="portalLoading()"
+                    matTooltip="Gérez votre abonnement depuis le portail Stripe">
+                    <mat-icon>arrow_downward</mat-icon>
+                    Rétrograder
+                  </button>
+                }
+                @case ('upgrade') {
+                  <button mat-flat-button class="subscribe-btn"
+                    (click)="subscribe(plan.priceId)"
+                    [disabled]="checkoutLoading()">
+                    @if (checkoutLoading()) { <mat-spinner diameter="16"></mat-spinner> }
+                    @else { <mat-icon>credit_card</mat-icon> }
+                    S'abonner
+                  </button>
+                }
               }
             </mat-card-actions>
           </mat-card>

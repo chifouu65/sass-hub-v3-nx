@@ -15,6 +15,18 @@ export class AuthService {
   readonly user = signal<Record<string, unknown> | null>(null);
   readonly isAuthenticated = computed(() => !!this.accessToken());
 
+  /** Initialise la session au démarrage de l'app en récupérant le user depuis le backend */
+  async initSession(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      // Essayer d'abord avec restoreSession (refresh token via cookie)
+      await this.restoreSession();
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   /** Tente de restaurer la session via le cookie refresh_token httpOnly */
   async restoreSession(): Promise<void> {
     this.loading.set(true);
