@@ -6,9 +6,19 @@ import { RefreshTokenRecord } from '../auth/token-store';
 export interface DbUser {
   id: string;
   email: string;
-  password_hash: string;
+  password_hash: string | null;
+  provider: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface DbPasswordResetToken {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  expires_at: string;
+  used_at: string | null;
+  created_at: string;
 }
 
 interface DbRefreshToken {
@@ -108,6 +118,62 @@ export class SupabaseService implements OnModuleInit {
   async findUserById(id: string): Promise<DbUser | null> {
     const rows = await this.get<DbUser[]>(`users?id=eq.${id}&select=*`);
     return rows[0] ?? null;
+  }
+
+  async createUser(email: string, passwordHash: string): Promise<DbUser> {
+    const rows = await this.post<DbUser[]>(
+      'users',
+      { email, password_hash: passwordHash, provider: 'email' },
+      'return=representation',
+    );
+    const user = Array.isArray(rows) ? rows[0] : (rows as unknown as DbUser);
+    if (!user) throw new Error('User creation failed');
+    return user;
+  }
+
+  async createGoogleUser(email: string): Promise<DbUser> {
+    const rows = await this.post<DbUser[]>(
+      'users',
+      { email, provider: 'google' },
+      'return=representation',
+    );
+    const user = Array.isArray(rows) ? rows[0] : (rows as unknown as DbUser);
+    if (!user) throw new Error('Google user creation failed');
+    return user;
+  }
+
+  async updateUserPassword(userId: string, passwordHash: string): Promise<void> {
+    await this.patch(`users?id=eq.${userId}`, {
+      password_hash: passwordHash,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  // ── Password reset tokens ─────────────────────────────────────────────────
+
+  async savePasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.post(
+      'password_reset_tokens',
+      { user_id: userId, token_hash: tokenHash, expires_at: expiresAt.toISOString() },
+      'return=minimal',
+    );
+  }
+
+  async findPasswordResetTokenByHash(tokenHash: string): Promise<DbPasswordResetToken | null> {
+    const rows = await this.get<DbPasswordResetToken[]>(
+      `password_reset_tokens?token_hash=eq.${encodeURIComponent(tokenHash)}&select=*`,
+    );
+    return rows[0] ?? null;
+  }
+
+  async markResetTokenUsed(id: string): Promise<void> {
+    await this.patch(`password_reset_tokens?id=eq.${id}`, {
+      used_at: new Date().toISOString(),
+    });
   }
 
   // ── Refresh tokens ────────────────────────────────────────────────────────

@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { OAuthService } from './auth/oauth.service';
+import { GoogleOAuthService } from './auth/google-oauth.service';
+import { SupabaseService } from './supabase/supabase.service';
 import { cookieOptions } from './auth/cookies';
 import { Public } from './auth/public.decorator';
 
@@ -11,6 +13,20 @@ interface LoginDto {
   redirect_uri: string;
   client_id: string;
   code_challenge: string;
+}
+
+interface RegisterDto {
+  email: string;
+  password: string;
+}
+
+interface ForgotPasswordDto {
+  email: string;
+}
+
+interface ResetPasswordDto {
+  token: string;
+  password: string;
 }
 
 interface TokenDto {
@@ -24,7 +40,11 @@ interface TokenDto {
 
 @Controller()
 export class OAuthController {
-  constructor(private readonly oauth: OAuthService) {}
+  constructor(
+    private readonly oauth: OAuthService,
+    private readonly googleOAuth: GoogleOAuthService,
+    private readonly supabase: SupabaseService,
+  ) {}
 
   @Public()
   @Post('/oauth/authorize')
@@ -39,6 +59,87 @@ export class OAuthController {
     };
     const code = Buffer.from(JSON.stringify(codePayload)).toString('base64url');
     return { code, redirect_uri: dto.redirect_uri, state: randomUUID() };
+  }
+
+  // ── Google OAuth ───────────────────────────────────────────────────────────
+
+  @Public()
+  @Get('/auth/google')
+  googleRedirect(@Res() res: Response) {
+    const verifier = this.googleOAuth.generateCodeVerifier();
+    const challenge = this.googleOAuth.generateCodeChallenge(verifier);
+    const authUrl = this.googleOAuth.getAuthorizationUrl(challenge);
+
+    res.cookie('google_pkce', verifier, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 10 * 60 * 1000, // 10 min
+    });
+    res.redirect(authUrl);
+  }
+
+  @Public()
+  @Get('/auth/google/callback')
+  async googleCallback(
+    @Query('code') code: string,
+    @Query('error') error: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const frontendBase =
+      process.env['FRONTEND_URL'] ?? 'http://localhost:4200';
+
+    if (error || !code) {
+      return res.redirect(`${frontendBase}/login?error=google_cancelled`);
+    }
+
+    const verifier = req.cookies?.['google_pkce'] as string | undefined;
+    if (!verifier) {
+      return res.redirect(`${frontendBase}/login?error=google_state_missing`);
+    }
+
+    res.clearCookie('google_pkce');
+
+    try {
+      const { email } = await this.googleOAuth.exchangeCode(code, verifier);
+
+      let user = await this.supabase.findUserByEmail(email);
+      if (!user) {
+        user = await this.supabase.createGoogleUser(email);
+      }
+
+      const tokens = await this.oauth.issueTokens(
+        { id: user.id, email: user.email },
+        { sub: user.id, email: user.email },
+      );
+
+      this.setRefreshCookie(res, tokens.refresh_token);
+      return res.redirect(frontendBase);
+    } catch {
+      return res.redirect(`${frontendBase}/login?error=google_failed`);
+    }
+  }
+
+  @Public()
+  @Post('/auth/register')
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    const user = await this.oauth.registerUser(dto.email, dto.password);
+    const tokens = await this.oauth.issueTokens(user, { sub: user.id, email: user.email });
+    this.setRefreshCookie(res, tokens.refresh_token);
+    return tokens;
+  }
+
+  @Public()
+  @Post('/auth/forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.oauth.requestPasswordReset(dto.email);
+  }
+
+  @Public()
+  @Post('/auth/reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.oauth.resetPassword(dto.token, dto.password);
+    return { ok: true };
   }
 
   @Public()

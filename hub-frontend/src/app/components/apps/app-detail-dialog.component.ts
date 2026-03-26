@@ -43,7 +43,7 @@ export type AppDetailDialogResult = 'subscribe' | 'unsubscribe' | null;
     <mat-dialog-content>
       <p class="dialog-desc">{{ data.app.description }}</p>
 
-      @if (data.app.features?.length) {
+      @if (data.app.features.length) {
         <h3 class="section-title">Fonctionnalités</h3>
         <ul class="features-list">
           @for (f of data.app.features; track f) {

@@ -12,19 +12,19 @@ export class UserAppsController {
 
   /** GET /user-apps → liste des app IDs auxquels l'utilisateur est abonné */
   @Get()
-  list(@Req() req: AuthReq) {
-    return { subscribedIds: this.userApps.getSubscribedIds(req.user?.sub ?? '') };
+  async list(@Req() req: AuthReq) {
+    return { subscribedIds: await this.userApps.getSubscribedIds(req.user?.sub ?? '') };
   }
 
   /** POST /user-apps/:id → s'abonner à une app */
   @Post(':id')
-  subscribe(@Req() req: AuthReq, @Param('id') appId: string) {
-    return { subscribedIds: this.userApps.subscribe(req.user?.sub ?? '', appId) };
+  async subscribe(@Req() req: AuthReq, @Param('id') appId: string) {
+    return { subscribedIds: await this.userApps.subscribe(req.user?.sub ?? '', appId) };
   }
 
   /** DELETE /user-apps/:id → se désabonner d'une app */
   @Delete(':id')
-  unsubscribe(@Req() req: AuthReq, @Param('id') appId: string) {
-    return { subscribedIds: this.userApps.unsubscribe(req.user?.sub ?? '', appId) };
+  async unsubscribe(@Req() req: AuthReq, @Param('id') appId: string) {
+    return { subscribedIds: await this.userApps.unsubscribe(req.user?.sub ?? '', appId) };
   }
 }

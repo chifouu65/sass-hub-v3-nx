@@ -33,5 +33,12 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./components/login/login.component').then(m => m.LoginComponent),
   },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./components/reset-password/reset-password.component').then(
+        m => m.ResetPasswordComponent,
+      ),
+  },
   { path: '**', redirectTo: '' },
 ];

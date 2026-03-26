@@ -100,6 +100,71 @@ export class AuthService {
     }
   }
 
+  /** Inscription */
+  async register(email: string, password: string): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const json = await firstValueFrom(
+        this.http.post<{ access_token?: string }>(
+          `${this.apiBase}/auth/register`,
+          { email, password },
+          { withCredentials: true },
+        )
+      );
+      if (!json.access_token) throw new Error('missing_access_token');
+      this.accessToken.set(json.access_token);
+      await this.fetchMe(json.access_token);
+    } catch (e) {
+      this.clearSession();
+      this.error.set(this.extractError(e));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Demande de réinitialisation du mot de passe */
+  async forgotPassword(email: string): Promise<{ resetUrl?: string }> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{ resetUrl?: string }>(
+          `${this.apiBase}/auth/forgot-password`,
+          { email },
+          { withCredentials: true },
+        )
+      );
+      return res ?? {};
+    } catch (e) {
+      this.error.set(this.extractError(e));
+      return {};
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  /** Réinitialisation du mot de passe avec un token */
+  async resetPassword(token: string, password: string): Promise<boolean> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      await firstValueFrom(
+        this.http.post<{ ok: boolean }>(
+          `${this.apiBase}/auth/reset-password`,
+          { token, password },
+          { withCredentials: true },
+        )
+      );
+      return true;
+    } catch (e) {
+      this.error.set(this.extractError(e));
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   /** Déconnexion */
   async logout(): Promise<void> {
     try {

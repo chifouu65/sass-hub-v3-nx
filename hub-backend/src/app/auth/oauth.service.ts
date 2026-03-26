@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createRemoteJWKSet, exportJWK, jwtVerify, SignJWT } from 'jose';
 import { createPrivateKey, randomUUID, createHash } from 'node:crypto';
 import { URL } from 'node:url';
@@ -95,6 +95,10 @@ export class OAuthService {
     const dbUser = await this.supabase.findUserByEmail(email);
     if (!dbUser) throw new UnauthorizedException('Invalid credentials');
 
+    if (dbUser.provider !== 'email' || !dbUser.password_hash) {
+      throw new UnauthorizedException('use_google_login');
+    }
+
     const hash = hashPassword(password);
     if (hash !== dbUser.password_hash) throw new UnauthorizedException('Invalid credentials');
 
@@ -187,6 +191,47 @@ export class OAuthService {
     );
     tokens.refresh_token = `${nextId}:${nextToken}`;
     return tokens;
+  }
+
+  // ── Register ──────────────────────────────────────────────────────────────
+
+  async registerUser(email: string, password: string): Promise<UserRecord> {
+    const existing = await this.supabase.findUserByEmail(email);
+    if (existing) throw new ConflictException('email_already_exists');
+    const hash = hashPassword(password);
+    const user = await this.supabase.createUser(email, hash);
+    return { id: user.id, email: user.email };
+  }
+
+  // ── Password reset ────────────────────────────────────────────────────────
+
+  async requestPasswordReset(email: string): Promise<{ resetUrl?: string }> {
+    const user = await this.supabase.findUserByEmail(email);
+    // On ne révèle pas si l'email existe ou non
+    if (!user) return {};
+
+    const token = randomUUID();
+    const hash = sha256(token);
+    const expiresAt = new Date(Date.now() + 3600 * 1000); // 1h
+
+    await this.supabase.savePasswordResetToken(user.id, hash, expiresAt);
+
+    // En dev : on retourne l'URL directement (en prod : envoyer par email)
+    const isDev = process.env['NODE_ENV'] !== 'production';
+    return isDev ? { resetUrl: `/reset-password?token=${token}` } : {};
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const hash = sha256(token);
+    const record = await this.supabase.findPasswordResetTokenByHash(hash);
+
+    if (!record) throw new UnauthorizedException('invalid_token');
+    if (record.used_at) throw new UnauthorizedException('token_already_used');
+    if (new Date(record.expires_at) < new Date()) throw new UnauthorizedException('token_expired');
+
+    const passwordHash = hashPassword(newPassword);
+    await this.supabase.updateUserPassword(record.user_id, passwordHash);
+    await this.supabase.markResetTokenUsed(record.id);
   }
 
   // ── JWKS & verification ───────────────────────────────────────────────────

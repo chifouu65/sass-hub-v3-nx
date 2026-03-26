@@ -10,10 +10,11 @@ import { BillingModule } from './billing/billing.module';
 import { UserAppsModule } from './user-apps/user-apps.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { OAuthController } from './oauth.controller';
+import { GoogleOAuthService } from './auth/google-oauth.service';
 
 @Module({
   imports: [JwtModule.register({}), SupabaseModule, AuthModule, CatalogModule, BillingModule, UserAppsModule],
   controllers: [AppController, OAuthController],
-  providers: [AppService, { provide: APP_GUARD, useClass: AuthGuard }],
+  providers: [AppService, GoogleOAuthService, { provide: APP_GUARD, useClass: AuthGuard }],
 })
 export class AppModule {}
