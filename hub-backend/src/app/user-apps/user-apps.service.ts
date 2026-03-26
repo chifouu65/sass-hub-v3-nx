@@ -1,26 +1,26 @@
 import { Injectable } from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class UserAppsService {
-  /** In-memory: userId → Set<appId>. À remplacer par une DB en production. */
-  private readonly subscriptions = new Map<string, Set<string>>();
+  constructor(private readonly supabase: SupabaseService) {}
 
-  getSubscribedIds(userId: string): string[] {
-    return [...(this.subscriptions.get(userId) ?? [])];
+  async getSubscribedIds(userId: string): Promise<string[]> {
+    return this.supabase.getSubscribedAppIds(userId);
   }
 
-  subscribe(userId: string, appId: string): string[] {
-    if (!this.subscriptions.has(userId)) this.subscriptions.set(userId, new Set());
-    this.subscriptions.get(userId)!.add(appId);
-    return this.getSubscribedIds(userId);
+  async subscribe(userId: string, appId: string): Promise<string[]> {
+    await this.supabase.addAppSubscription(userId, appId);
+    return this.supabase.getSubscribedAppIds(userId);
   }
 
-  unsubscribe(userId: string, appId: string): string[] {
-    this.subscriptions.get(userId)?.delete(appId);
-    return this.getSubscribedIds(userId);
+  async unsubscribe(userId: string, appId: string): Promise<string[]> {
+    await this.supabase.removeAppSubscription(userId, appId);
+    return this.supabase.getSubscribedAppIds(userId);
   }
 
-  isSubscribed(userId: string, appId: string): boolean {
-    return this.subscriptions.get(userId)?.has(appId) ?? false;
+  async isSubscribed(userId: string, appId: string): Promise<boolean> {
+    const ids = await this.supabase.getSubscribedAppIds(userId);
+    return ids.includes(appId);
   }
 }

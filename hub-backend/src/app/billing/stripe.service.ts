@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
 
 // ── IDs Stripe créés via MCP ─────────────────────────────────────────────────
 export const STRIPE_PLANS = {
@@ -51,8 +52,8 @@ export interface StripeInvoice {
 export class StripeService {
   private readonly logger = new Logger(StripeService.name);
   private readonly baseUrl = 'https://api.stripe.com/v1';
-  // customer map userId → stripeCustomerId (en mémoire pour le dev)
-  private readonly customerMap = new Map<string, string>();
+
+  constructor(private readonly supabase: SupabaseService) {}
 
   private get secretKey(): string {
     const key = process.env.STRIPE_SECRET_KEY;
@@ -92,22 +93,24 @@ export class StripeService {
   // ── Customer ────────────────────────────────────────────────────────────────
 
   async getOrCreateCustomer(userId: string, email: string): Promise<string> {
-    if (this.customerMap.has(userId)) return this.customerMap.get(userId)!;
+    // 1. Vérifier en base Supabase
+    const existing = await this.supabase.getStripeCustomerId(userId);
+    if (existing) return existing;
 
-    // Chercher un client existant par email
+    // 2. Chercher un client existant dans Stripe par email
     const list = await this.stripeGet<any>(`/customers?email=${encodeURIComponent(email)}&limit=1`);
     if (list.data?.length) {
       const id = list.data[0].id as string;
-      this.customerMap.set(userId, id);
+      await this.supabase.saveStripeCustomer(userId, id);
       return id;
     }
 
-    // Créer un nouveau client
+    // 3. Créer un nouveau client Stripe
     const customer = await this.stripePost<any>('/customers', {
       email,
       'metadata[userId]': userId,
     });
-    this.customerMap.set(userId, customer.id);
+    await this.supabase.saveStripeCustomer(userId, customer.id);
     return customer.id;
   }
 

@@ -1,17 +1,16 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { createRemoteJWKSet, exportJWK, jwtVerify, SignJWT } from 'jose';
-import { createPrivateKey, randomUUID } from 'node:crypto';
+import { createPrivateKey, randomUUID, createHash } from 'node:crypto';
 import { URL } from 'node:url';
 import { sha256, ensureRsaKeyPair, sha256Base64Url } from './crypto';
 import { AuthConfig, loadAuthConfig } from './auth.config';
-import { InMemoryTokenStore } from './token-store-memory';
 import { RefreshTokenRecord, TokenStore } from './token-store';
-import { RedisTokenStore } from './token-store-redis';
+import { SupabaseService } from '../supabase/supabase.service';
+import { SupabaseTokenStore } from './token-store-supabase';
 
 export interface UserRecord {
   id: string;
   email: string;
-  password: string;
 }
 
 export interface OAuthTokens {
@@ -28,28 +27,32 @@ export interface ValidateAuthCodeInput {
   clientId: string;
 }
 
+/** Hash SHA-256 d'un mot de passe — à remplacer par bcrypt en production */
+function hashPassword(password: string): string {
+  return createHash('sha256').update(password).digest('hex');
+}
+
 @Injectable()
 export class OAuthService {
-  private store: TokenStore;
+  private readonly store: TokenStore;
   private readonly kid = 'hub-backend-rs256-1';
   private readonly cfg: AuthConfig;
-  private users: UserRecord[] = [
-    {
-      id: 'user-demo-1',
-      email: 'demo@example.com',
-      password: 'password123',
-    },
-  ];
-
   private readonly privPem: string;
   private readonly publicKey: ReturnType<typeof ensureRsaKeyPair>['publicKey'];
-  constructor() {
+
+  constructor(private readonly supabase: SupabaseService) {
     this.cfg = loadAuthConfig();
-    const { privatePem, publicKey } = ensureRsaKeyPair(this.cfg.privateKeyPath, this.cfg.publicKeyPath);
+    const { privatePem, publicKey } = ensureRsaKeyPair(
+      this.cfg.privateKeyPath,
+      this.cfg.publicKeyPath,
+    );
     this.privPem = privatePem;
     this.publicKey = publicKey;
-    this.store = this.cfg.redisUrl ? new RedisTokenStore(this.cfg.redisUrl) : new InMemoryTokenStore();
+    // Toujours utiliser Supabase comme store de tokens
+    this.store = new SupabaseTokenStore(supabase);
   }
+
+  // ── Token issuance ────────────────────────────────────────────────────────
 
   async issueTokens(user: UserRecord, payload: { sub: string; email: string }) {
     const now = Math.floor(Date.now() / 1000);
@@ -86,11 +89,19 @@ export class OAuthService {
     } satisfies OAuthTokens;
   }
 
+  // ── User validation ───────────────────────────────────────────────────────
+
   async validateUser(email: string, password: string): Promise<UserRecord> {
-    const user = this.users.find((u) => u.email === email);
-    if (!user || user.password !== password) throw new UnauthorizedException('Invalid credentials');
-    return user;
+    const dbUser = await this.supabase.findUserByEmail(email);
+    if (!dbUser) throw new UnauthorizedException('Invalid credentials');
+
+    const hash = hashPassword(password);
+    if (hash !== dbUser.password_hash) throw new UnauthorizedException('Invalid credentials');
+
+    return { id: dbUser.id, email: dbUser.email };
   }
+
+  // ── Auth code exchange (PKCE) ─────────────────────────────────────────────
 
   async exchangeAuthCode({ code, codeVerifier, redirectUri, clientId }: ValidateAuthCodeInput) {
     let decoded: string;
@@ -100,7 +111,13 @@ export class OAuthService {
       throw new UnauthorizedException('invalid_code_encoding');
     }
 
-    let parsed: { userId: string; email: string; challenge: string; redirectUri: string; clientId: string };
+    let parsed: {
+      userId: string;
+      email: string;
+      challenge: string;
+      redirectUri: string;
+      clientId: string;
+    };
     try {
       parsed = JSON.parse(decoded);
     } catch {
@@ -116,40 +133,45 @@ export class OAuthService {
       throw new UnauthorizedException('invalid_pkce');
     }
 
-    const user = this.users.find((u) => u.id === parsed.userId);
-    if (!user) {
-      throw new UnauthorizedException('user_not_found');
-    }
+    const dbUser = await this.supabase.findUserById(parsed.userId);
+    if (!dbUser) throw new UnauthorizedException('user_not_found');
 
-    return this.issueTokens(user, { sub: user.id, email: user.email });
+    return this.issueTokens(
+      { id: dbUser.id, email: dbUser.email },
+      { sub: dbUser.id, email: dbUser.email },
+    );
   }
+
+  // ── Refresh ───────────────────────────────────────────────────────────────
 
   async refresh(refreshToken: string) {
     const [id, token] = refreshToken.split(':');
     if (!id || !token) throw new UnauthorizedException('invalid_refresh');
+
     const rec = await this.store.findById(id);
     if (!rec || rec.revokedAt) throw new UnauthorizedException('revoked');
     if (rec.expiresAt.getTime() < Date.now()) {
       await this.store.revoke(rec.id);
       throw new UnauthorizedException('expired');
     }
+
     const hash = sha256(token);
     const reuse = hash !== rec.tokenHash;
     if (reuse) {
       await this.store.revoke(rec.id, { reuse: true });
       throw new UnauthorizedException('reuse_detected');
     }
-    const user = this.users.find((u) => u.id === rec.userId);
-    if (!user) throw new UnauthorizedException('user_not_found');
 
-    // rotate
+    const dbUser = await this.supabase.findUserById(rec.userId);
+    if (!dbUser) throw new UnauthorizedException('user_not_found');
+
     const nextId = randomUUID();
     const nextToken = randomUUID();
     const nextHash = sha256(nextToken);
     const refreshExp = this.parseDurationSeconds(this.cfg.refreshTtl);
     const nextRec: RefreshTokenRecord = {
       id: nextId,
-      userId: user.id,
+      userId: dbUser.id,
       tokenHash: nextHash,
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + refreshExp * 1000),
@@ -158,10 +180,16 @@ export class OAuthService {
       reuseDetected: false,
     };
     await this.store.rotate(rec, nextRec);
-    const tokens = await this.issueTokens(user, { sub: user.id, email: user.email });
+
+    const tokens = await this.issueTokens(
+      { id: dbUser.id, email: dbUser.email },
+      { sub: dbUser.id, email: dbUser.email },
+    );
     tokens.refresh_token = `${nextId}:${nextToken}`;
     return tokens;
   }
+
+  // ── JWKS & verification ───────────────────────────────────────────────────
 
   async verifyAccess(accessToken: string) {
     const jwk = createRemoteJWKSet(new URL(`${this.cfg.issuer}/.well-known/jwks.json`));
@@ -175,19 +203,13 @@ export class OAuthService {
   async getJwks() {
     const jwk = await exportJWK(this.publicKey);
     return {
-      keys: [
-        {
-          ...jwk,
-          use: 'sig',
-          alg: 'RS256',
-          kid: this.kid,
-        },
-      ],
+      keys: [{ ...jwk, use: 'sig', alg: 'RS256', kid: this.kid }],
     };
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
   private parseDurationSeconds(text: string): number {
-    // Supports simple formats like "15m", "7d", "3600"
     const num = Number(text);
     if (!Number.isNaN(num)) return num;
     const match = /^([0-9]+)([smhd])$/.exec(text);
@@ -195,16 +217,11 @@ export class OAuthService {
     const value = Number(match[1]);
     const unit = match[2];
     switch (unit) {
-      case 's':
-        return value;
-      case 'm':
-        return value * 60;
-      case 'h':
-        return value * 3600;
-      case 'd':
-        return value * 86400;
-      default:
-        throw new Error(`Invalid duration unit: ${unit}`);
+      case 's': return value;
+      case 'm': return value * 60;
+      case 'h': return value * 3600;
+      case 'd': return value * 86400;
+      default: throw new Error(`Invalid duration unit: ${unit}`);
     }
   }
 }

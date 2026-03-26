@@ -8,10 +8,11 @@ import { AuthModule } from './auth/auth.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { BillingModule } from './billing/billing.module';
 import { UserAppsModule } from './user-apps/user-apps.module';
+import { SupabaseModule } from './supabase/supabase.module';
 import { OAuthController } from './oauth.controller';
 
 @Module({
-  imports: [JwtModule.register({}), AuthModule, CatalogModule, BillingModule, UserAppsModule],
+  imports: [JwtModule.register({}), SupabaseModule, AuthModule, CatalogModule, BillingModule, UserAppsModule],
   controllers: [AppController, OAuthController],
   providers: [AppService, { provide: APP_GUARD, useClass: AuthGuard }],
 })
