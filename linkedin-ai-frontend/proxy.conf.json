@@ -1,0 +1,17 @@
+{
+  "/api": {
+    "target": "http://localhost:4302",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/hub-api": {
+    "target": "http://localhost:4301",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/hub-api": "/api"
+    },
+    "logLevel": "debug"
+  }
+}

@@ -1,0 +1,186 @@
+.billing-page {
+  max-width: 860px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-size: 0.95rem;
+}
+
+/* Plan card */
+.plan-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.plan-card mat-card-content {
+  padding: 24px !important;
+}
+
+.plan-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.plan-badge {
+  background: var(--accent-muted);
+  color: var(--accent);
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.plan-price {
+  margin-top: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.price {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.period {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.plan-detail {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 8px;
+  align-self: center;
+}
+
+.plan-actions button {
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.cancel-btn {
+  color: var(--danger) !important;
+  border-color: var(--danger-muted) !important;
+}
+
+/* Invoices */
+.invoices-section {
+  margin-top: 36px;
+}
+
+.invoices-section h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.table-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  overflow: hidden;
+}
+
+.invoices-table {
+  width: 100%;
+  background: transparent !important;
+}
+
+.invoices-table th {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+  font-size: 0.8rem;
+  border-bottom-color: var(--border) !important;
+  background: var(--bg-secondary) !important;
+}
+
+.invoices-table td {
+  color: var(--text-primary) !important;
+  font-size: 0.88rem;
+  border-bottom-color: var(--border) !important;
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-paid {
+  background: var(--success-muted);
+  color: var(--success);
+}
+
+.status-pending {
+  background: var(--warning-muted);
+  color: var(--warning);
+}
+
+.status-overdue {
+  background: var(--danger-muted);
+  color: var(--danger);
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .plan-info {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .plan-actions {
+    align-self: flex-start;
+    width: 100%;
+  }
+
+  .plan-actions button {
+    flex: 1;
+  }
+
+  .table-card {
+    overflow-x: auto;
+  }
+
+  .invoices-table {
+    min-width: 480px;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-card mat-card-content {
+    padding: 18px 16px !important;
+  }
+
+  .price {
+    font-size: 1.6rem;
+  }
+}

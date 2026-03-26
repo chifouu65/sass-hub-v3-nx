@@ -1,0 +1,109 @@
+<div class="dashboard">
+
+  <!-- Welcome -->
+  <div class="welcome">
+    <h1>
+      @if (auth.isAuthenticated()) {
+        Bonjour, <span class="highlight">{{ auth.user()?.['email'] ?? 'utilisateur' }}</span>
+      } @else {
+        Bienvenue sur SaaS Hub
+      }
+    </h1>
+    <p class="subtitle">Gère toutes tes applications SaaS depuis un seul endroit.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    @for (stat of stats(); track stat.label) {
+      <mat-card class="stat-card" appearance="outlined">
+        <mat-card-content>
+          <div class="stat-icon" [style.background]="stat.color + '18'" [style.color]="stat.color">
+            <mat-icon>{{ stat.icon }}</mat-icon>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  <!-- Apps section -->
+  <div class="section-header">
+    <h2>
+      <mat-icon class="section-icon">bolt</mat-icon>
+      Tes applications
+    </h2>
+    <button mat-stroked-button routerLink="/apps">
+      Voir tout
+      <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading -->
+  @if (catalogResource.isLoading()) {
+    <div class="loading-state">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Chargement des applications…</span>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (catalogResource.error()) {
+    <div class="error-state">
+      <mat-icon>wifi_off</mat-icon>
+      <span>Impossible de charger les apps — le backend est-il démarré ?</span>
+    </div>
+  }
+
+  <!-- Apps grid -->
+  @if (!catalogResource.isLoading()) {
+    <div class="apps-grid">
+      @for (app of apps(); track app.id) {
+        <mat-card class="app-card" appearance="outlined">
+          <mat-card-content>
+            <div class="app-header">
+              <div class="app-icon-wrap"
+                [style.background]="app.iconBg"
+                [style.color]="app.iconColor">
+                <mat-icon>{{ app.icon }}</mat-icon>
+              </div>
+              <span class="status-dot" [class.active]="app.status === 'active'">
+                {{ app.status === 'active' ? 'Actif' : 'Disponible' }}
+              </span>
+            </div>
+            <h3 class="app-name">{{ app.name }}</h3>
+            <p class="app-tagline">{{ app.tagline }}</p>
+            <div class="app-footer">
+              <span class="plan-badge" [style.background]="app.iconBg" [style.color]="app.iconColor">
+                <mat-icon class="plan-icon">workspace_premium</mat-icon>
+                {{ app.plan }}
+              </span>
+              @if (app.status === 'active') {
+                <a mat-flat-button [href]="app.url" target="_blank" class="open-btn">
+                  Ouvrir
+                  <mat-icon iconPositionEnd>open_in_new</mat-icon>
+                </a>
+              } @else {
+                <button mat-stroked-button class="subscribe-btn" routerLink="/apps">
+                  <mat-icon>add</mat-icon>
+                  S'abonner
+                </button>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Empty state si backend off et pas d'erreur réseau -->
+      @if (apps().length === 0 && !catalogResource.error()) {
+        <div class="empty-state">
+          <mat-icon>view_module</mat-icon>
+          <p>Aucune application dans le catalogue.</p>
+        </div>
+      }
+    </div>
+  }
+
+</div>

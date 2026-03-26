@@ -1,0 +1,80 @@
+{
+  "name": "linkedin-ai-frontend",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "linkedin-ai-frontend/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/linkedin-ai-frontend",
+        "browser": "linkedin-ai-frontend/src/main.ts",
+        "tsConfig": "linkedin-ai-frontend/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "linkedin-ai-frontend/public"
+          }
+        ],
+        "styles": ["linkedin-ai-frontend/src/styles.css"]
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kb",
+              "maximumError": "8kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "linkedin-ai-frontend:build:production"
+        },
+        "development": {
+          "buildTarget": "linkedin-ai-frontend:build:development",
+          "proxyConfig": "linkedin-ai-frontend/proxy.conf.json"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {}
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "linkedin-ai-frontend:build",
+        "port": 4200,
+        "staticFilePath": "dist/linkedin-ai-frontend/browser",
+        "spa": true
+      }
+    }
+  }
+}

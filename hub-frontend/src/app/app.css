@@ -1,0 +1,240 @@
+/* ── Toolbar ─────────────────────────────────────────── */
+.toolbar {
+  background: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 56px;
+  padding: 0 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+}
+
+.brand-icon {
+  color: var(--accent);
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.spacer { flex: 1; }
+
+.toolbar-icon-btn {
+  color: var(--text-secondary) !important;
+}
+
+.login-btn {
+  background: var(--accent) !important;
+  color: white !important;
+  font-weight: 500;
+  border-radius: var(--radius-sm) !important;
+  gap: 4px;
+}
+
+/* Avatar toolbar */
+.avatar-btn {
+  padding: 0 !important;
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── User menu ─────────────────────────────────────── */
+.menu-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  min-width: 220px;
+}
+
+.menu-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.menu-email {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.menu-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.logout-item {
+  color: var(--danger) !important;
+}
+
+/* ── Sidenav ─────────────────────────────────────────── */
+.sidenav-container {
+  position: absolute;
+  top: 56px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+}
+
+.sidenav {
+  width: 240px;
+  background: var(--bg-secondary) !important;
+  border-right: 1px solid var(--border) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* User block in sidebar */
+.sidenav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px;
+}
+
+.sidenav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidenav-user-info {
+  min-width: 0;
+}
+
+.sidenav-user-email {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidenav-user-plan {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: var(--warning);
+  margin-top: 2px;
+}
+
+.plan-icon {
+  font-size: 12px !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* Section labels */
+.sidenav-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 12px 16px 4px;
+}
+
+/* Nav items */
+.sidenav mat-nav-list {
+  padding-top: 0;
+}
+
+.sidenav .active-link {
+  background: var(--accent-muted) !important;
+  color: var(--accent) !important;
+  border-radius: var(--radius-sm) !important;
+  border-left: 2px solid var(--accent);
+}
+
+.sidenav .active-link mat-icon {
+  color: var(--accent) !important;
+}
+
+.sidenav-footer {
+  margin-top: auto;
+  padding-bottom: 12px;
+}
+
+/* ── Content ─────────────────────────────────────────── */
+.content {
+  background: var(--bg-primary);
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .content {
+    padding: 20px 16px;
+  }
+
+  .brand-name {
+    display: none;
+  }
+
+  .toolbar-icon-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 16px 12px;
+  }
+}

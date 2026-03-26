@@ -1,0 +1,73 @@
+<div class="login-container">
+  <mat-card class="login-card" appearance="outlined">
+    <mat-card-content>
+      <div class="login-header">
+        <div class="logo-icon">
+          <mat-icon>hub</mat-icon>
+        </div>
+        <h1>SaaS Hub</h1>
+        <p class="login-subtitle">Connecte-toi pour accéder à tes applications</p>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" class="login-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input
+            matInput
+            type="email"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            name="email"
+            placeholder="ton@email.com"
+          />
+          <mat-icon matPrefix>email</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Mot de passe</mat-label>
+          <input
+            matInput
+            [type]="hidePassword() ? 'password' : 'text'"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+            name="password"
+            placeholder="Mot de passe"
+          />
+          <mat-icon matPrefix>lock</mat-icon>
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="hidePassword.set(!hidePassword())"
+          >
+            <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </mat-form-field>
+
+        @if (auth.error()) {
+          <div class="error-banner">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ auth.error() }}</span>
+          </div>
+        }
+
+        <button
+          mat-flat-button
+          type="submit"
+          class="login-submit"
+          [disabled]="auth.loading()"
+        >
+          @if (auth.loading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            Se connecter
+          }
+        </button>
+      </form>
+
+      <p class="demo-hint">
+        Démo : demo&#64;example.com / password123
+      </p>
+    </mat-card-content>
+  </mat-card>
+</div>

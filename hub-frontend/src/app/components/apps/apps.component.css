@@ -1,0 +1,231 @@
+.apps-page {
+  max-width: 960px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.page-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-size: 0.95rem;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--danger-muted);
+  color: var(--danger);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+}
+
+/* ── Tabs ────────────────────────────────────────────── */
+.apps-tabs {
+  margin-top: 4px;
+}
+
+.tab-icon {
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin-right: 6px;
+}
+
+.tab-count {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 8px;
+}
+
+/* ── Cards ──────────────────────────────────────────── */
+.apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  padding-top: 20px;
+}
+
+.app-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  transition: border-color var(--transition), transform var(--transition);
+}
+
+.app-card:hover {
+  border-color: var(--border-hover) !important;
+  transform: translateY(-1px);
+}
+
+.app-card.active {
+  border-color: rgba(139,92,246,0.25) !important;
+}
+
+.app-card mat-card-content {
+  padding: 22px !important;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.app-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-icon mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.badge-active {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--success-muted);
+  color: var(--success);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.badge-active mat-icon {
+  font-size: 12px !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.app-card h3 {
+  font-size: 1.02rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.app-desc {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.plans-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.plan-tag {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.action-open {
+  background: var(--accent) !important;
+  color: white !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.action-settings {
+  color: var(--text-secondary) !important;
+}
+
+.action-subscribe {
+  background: var(--accent) !important;
+  color: white !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.action-info {
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.85rem;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--text-muted);
+}
+
+.empty-state mat-icon {
+  font-size: 52px;
+  width: 52px;
+  height: 52px;
+  opacity: 0.35;
+  margin-bottom: 12px;
+}
+
+.empty-state h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.empty-state p {
+  font-size: 0.88rem;
+  margin-bottom: 20px;
+}
+
+.cta-btn {
+  background: var(--accent) !important;
+  color: white !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .apps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header h1 {
+    font-size: 1.35rem;
+  }
+}

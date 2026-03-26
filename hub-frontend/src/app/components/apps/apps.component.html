@@ -1,0 +1,116 @@
+<div class="apps-page">
+  <div class="page-header">
+    <div>
+      <h1>Applications</h1>
+      <p class="page-subtitle">Explore et gère tes applications SaaS.</p>
+    </div>
+    @if (catalogResource.isLoading()) {
+      <mat-spinner diameter="24"></mat-spinner>
+    }
+  </div>
+
+  @if (catalogResource.error()) {
+    <div class="error-banner">
+      <mat-icon>wifi_off</mat-icon>
+      Backend non accessible — vérifier que hub-backend tourne sur le port 4301.
+    </div>
+  }
+
+  <mat-tab-group class="apps-tabs" animationDuration="200ms" [(selectedIndex)]="selectedTab">
+
+    <!-- Mes apps -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">check_circle</mat-icon>
+        Mes apps
+        <span class="tab-count">{{ activeApps().length }}</span>
+      </ng-template>
+
+      <div class="apps-grid">
+        @for (app of activeApps(); track app.id) {
+          <mat-card class="app-card active" appearance="outlined">
+            <mat-card-content>
+              <div class="card-top">
+                <div class="app-icon" [style.background]="app.iconBg" [style.color]="app.iconColor">
+                  <mat-icon>{{ app.icon }}</mat-icon>
+                </div>
+                <span class="badge-active">
+                  <mat-icon>check</mat-icon>
+                  Actif
+                </span>
+              </div>
+              <h3>{{ app.name }}</h3>
+              <p class="app-desc">{{ app.description }}</p>
+              <div class="plans-row">
+                @for (plan of app.plans; track plan) {
+                  <span class="plan-tag">{{ plan }}</span>
+                }
+              </div>
+              <div class="card-actions">
+                <a mat-flat-button [href]="app.url" target="_blank" class="action-open">
+                  <mat-icon>open_in_new</mat-icon>
+                  Ouvrir l'app
+                </a>
+                <button mat-icon-button class="action-settings" matTooltip="Paramètres">
+                  <mat-icon>tune</mat-icon>
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        @empty {
+          <div class="empty-state">
+            <mat-icon>apps</mat-icon>
+            <h3>Aucune app active</h3>
+            <p>Abonne-toi à une app depuis le catalogue pour commencer.</p>
+            <button mat-flat-button class="cta-btn" (click)="selectedTab.set(1)">
+              Voir le catalogue
+              <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- Catalogue -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">store</mat-icon>
+        Catalogue
+        <span class="tab-count">{{ availableApps().length }}</span>
+      </ng-template>
+
+      <div class="apps-grid">
+        @for (app of availableApps(); track app.id) {
+          <mat-card class="app-card" appearance="outlined">
+            <mat-card-content>
+              <div class="card-top">
+                <div class="app-icon" [style.background]="app.iconBg" [style.color]="app.iconColor">
+                  <mat-icon>{{ app.icon }}</mat-icon>
+                </div>
+              </div>
+              <h3>{{ app.name }}</h3>
+              <p class="app-desc">{{ app.description }}</p>
+              <div class="plans-row">
+                @for (plan of app.plans; track plan) {
+                  <span class="plan-tag">{{ plan }}</span>
+                }
+              </div>
+              <div class="card-actions">
+                <button mat-flat-button class="action-subscribe">
+                  <mat-icon>add</mat-icon>
+                  S'abonner
+                </button>
+                <button mat-stroked-button class="action-info">
+                  En savoir plus
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

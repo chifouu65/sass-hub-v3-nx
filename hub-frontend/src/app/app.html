@@ -1,0 +1,116 @@
+<!-- ── Toolbar ── -->
+<mat-toolbar class="toolbar">
+  <button mat-icon-button (click)="toggleSidenav()" matTooltip="Menu">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <div class="brand">
+    <mat-icon class="brand-icon">hub</mat-icon>
+    <span class="brand-name">SaaS Hub</span>
+  </div>
+
+  <span class="spacer"></span>
+
+  @if (auth.isAuthenticated()) {
+    <button mat-icon-button matTooltip="Notifications" class="toolbar-icon-btn">
+      <mat-icon>notifications_outlined</mat-icon>
+    </button>
+
+    <button mat-icon-button [matMenuTriggerFor]="userMenu" class="avatar-btn" [matTooltip]="auth.user()?.['email']?.toString() ?? ''">
+      <div class="avatar">{{ userInitials }}</div>
+    </button>
+
+    <mat-menu #userMenu="matMenu" class="user-menu">
+      <div class="menu-user-info">
+        <div class="menu-avatar">{{ userInitials }}</div>
+        <div>
+          <div class="menu-email">{{ auth.user()?.['email'] ?? 'Utilisateur' }}</div>
+          <div class="menu-role">Plan Pro</div>
+        </div>
+      </div>
+      <mat-divider></mat-divider>
+      <button mat-menu-item routerLink="/account">
+        <mat-icon>manage_accounts</mat-icon>
+        <span>Mon compte</span>
+      </button>
+      <button mat-menu-item routerLink="/billing">
+        <mat-icon>receipt_long</mat-icon>
+        <span>Facturation</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="logout()" class="logout-item">
+        <mat-icon>logout</mat-icon>
+        <span>Déconnexion</span>
+      </button>
+    </mat-menu>
+  } @else {
+    <button mat-flat-button routerLink="/login" class="login-btn">
+      <mat-icon>login</mat-icon>
+      Connexion
+    </button>
+  }
+</mat-toolbar>
+
+<!-- ── Layout ── -->
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav
+    [opened]="sidenavOpened()"
+    [mode]="isMobile() ? 'over' : 'side'"
+    (closedStart)="sidenavOpened.set(false)"
+    class="sidenav"
+  >
+    <!-- User info en haut de sidebar si connecté -->
+    @if (auth.isAuthenticated()) {
+      <div class="sidenav-user">
+        <div class="sidenav-avatar">{{ userInitials }}</div>
+        <div class="sidenav-user-info">
+          <div class="sidenav-user-email">{{ auth.user()?.['email'] ?? '' }}</div>
+          <div class="sidenav-user-plan">
+            <mat-icon class="plan-icon">workspace_premium</mat-icon>
+            Pro
+          </div>
+        </div>
+      </div>
+      <mat-divider></mat-divider>
+    }
+
+    <!-- Nav principale -->
+    <div class="sidenav-section-label">Navigation</div>
+    <mat-nav-list>
+      <a mat-list-item routerLink="/" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon matListItemIcon>space_dashboard</mat-icon>
+        <span matListItemTitle>Dashboard</span>
+      </a>
+      <a mat-list-item routerLink="/apps" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>view_module</mat-icon>
+        <span matListItemTitle>Applications</span>
+      </a>
+      <a mat-list-item routerLink="/billing" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>receipt_long</mat-icon>
+        <span matListItemTitle>Facturation</span>
+      </a>
+    </mat-nav-list>
+
+    <!-- Footer -->
+    <div class="sidenav-footer">
+      <mat-divider></mat-divider>
+      <div class="sidenav-section-label">Compte</div>
+      <mat-nav-list>
+        <a mat-list-item routerLink="/account" routerLinkActive="active-link">
+          <mat-icon matListItemIcon>manage_accounts</mat-icon>
+          <span matListItemTitle>Paramètres</span>
+        </a>
+        @if (auth.isAuthenticated()) {
+          <a mat-list-item (click)="logout()" class="logout-item">
+            <mat-icon matListItemIcon>logout</mat-icon>
+            <span matListItemTitle>Déconnexion</span>
+          </a>
+        }
+      </mat-nav-list>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="content">
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>

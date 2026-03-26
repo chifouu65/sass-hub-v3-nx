@@ -1,0 +1,72 @@
+<div class="account-page">
+  <div class="page-header">
+    <h1>Mon compte</h1>
+    <p class="page-subtitle">Paramètres et informations de ton compte.</p>
+  </div>
+
+  @if (auth.isAuthenticated()) {
+    <mat-card class="profile-card" appearance="outlined">
+      <mat-card-content>
+        <div class="profile-header">
+          <div class="avatar">
+            <mat-icon>person</mat-icon>
+          </div>
+          <div class="profile-info">
+            <h3>{{ auth.user()?.['email'] ?? 'Utilisateur' }}</h3>
+            <span class="profile-id">ID : {{ auth.user()?.['sub'] ?? '—' }}</span>
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="profile-details">
+          <div class="detail-row">
+            <span class="detail-label">Email</span>
+            <span class="detail-value">{{ auth.user()?.['email'] ?? '—' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Émetteur JWT</span>
+            <span class="detail-value">{{ auth.user()?.['iss'] ?? '—' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Expiration</span>
+            <span class="detail-value">{{ auth.user()?.['exp'] ?? '—' }}</span>
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="profile-actions">
+          <button mat-stroked-button (click)="refresh()">
+            <mat-icon>refresh</mat-icon>
+            Rafraîchir le token
+          </button>
+          <button mat-stroked-button class="logout-btn" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            Se déconnecter
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <details class="raw-token">
+      <summary>Payload JWT brut</summary>
+      <pre>{{ auth.user() | json }}</pre>
+    </details>
+  } @else {
+    <mat-card class="not-logged-card" appearance="outlined">
+      <mat-card-content>
+        <mat-icon class="lock-icon">lock</mat-icon>
+        <p>Tu n'es pas connecté. Connecte-toi pour voir les détails de ton compte.</p>
+        <a mat-flat-button routerLink="/login" class="login-link">Se connecter</a>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (auth.error()) {
+    <div class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      {{ auth.error() }}
+    </div>
+  }
+</div>
