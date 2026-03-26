@@ -79,8 +79,7 @@ export class DashboardComponent {
       }),
   });
 
-  // Catalogue enrichi avec méta-données locales (icône, couleur, statut)
-  // On retourne [] si la ressource est en erreur pour éviter les crashes
+  // Catalogue enrichi — retourne [] si erreur pour éviter les crashes
   readonly apps = computed<AppCard[]>(() => {
     if (this.catalogResource.error()) return [];
     const raw: any = this.catalogResource.value() ?? [];
@@ -101,6 +100,7 @@ export class DashboardComponent {
   });
 
   readonly activeApps = computed(() => this.apps().filter(a => a.status === 'active'));
+
   readonly stats = computed(() => [
     {
       label: 'Apps actives',
@@ -119,4 +119,6 @@ export class DashboardComponent {
       value: '127',
       icon: 'trending_up',
       color: 'var(--success)',
-   
+    },
+  ]);
+}

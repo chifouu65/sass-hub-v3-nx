@@ -126,4 +126,5 @@ export class AppsComponent {
   readonly activeApps = computed(() => this.apps().filter(a => a.subscribed));
   readonly availableApps = computed(() => this.apps().filter(a => !a.subscribed));
 
-  selectedTab = signal
+  selectedTab = signal(0);
+}
