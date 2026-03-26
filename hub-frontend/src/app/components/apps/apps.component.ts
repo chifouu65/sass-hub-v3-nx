@@ -1,6 +1,7 @@
 import { Component, inject, computed, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../services/auth.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -89,14 +90,22 @@ const EXTRA_APPS: AppEnriched[] = [
 })
 export class AppsComponent {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
 
   readonly catalogResource = rxResource({
     stream: () =>
-      this.http.get<AppDescriptor[]>('/api/catalog', { withCredentials: true }),
+      this.http.get<AppDescriptor[]>('/api/catalog', {
+        headers: this.auth.accessToken()
+          ? { authorization: `Bearer ${this.auth.accessToken()}` }
+          : {},
+        withCredentials: true,
+      }),
   });
 
   /** Catalogue enrichi : API backend + apps statiques supplémentaires */
+  // On retourne [] si la ressource est en erreur pour éviter les crashes
   readonly apps = computed<AppEnriched[]>(() => {
+    if (this.catalogResource.error()) return EXTRA_APPS;
     const apiApps = (this.catalogResource.value() ?? []).map(app => {
       const meta = APP_META[app.id] ?? {};
       return {

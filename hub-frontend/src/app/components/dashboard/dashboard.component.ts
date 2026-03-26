@@ -72,12 +72,17 @@ export class DashboardComponent {
   readonly catalogResource = rxResource({
     stream: () =>
       this.http.get<AppDescriptor[]>('/api/catalog', {
+        headers: this.auth.accessToken()
+          ? { authorization: `Bearer ${this.auth.accessToken()}` }
+          : {},
         withCredentials: true,
       }),
   });
 
   // Catalogue enrichi avec méta-données locales (icône, couleur, statut)
+  // On retourne [] si la ressource est en erreur pour éviter les crashes
   readonly apps = computed<AppCard[]>(() => {
+    if (this.catalogResource.error()) return [];
     const raw: any = this.catalogResource.value() ?? [];
     return raw.map((app: any) => {
       const meta = APP_META[app.id] ?? DEFAULT_META;
