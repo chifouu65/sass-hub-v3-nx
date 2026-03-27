@@ -1,0 +1,49 @@
+# ─────────────────────────────────────────────────────────
+# Stage 1 — Build Angular frontend
+# ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+RUN npx nx build foodtruck-frontend --configuration=production
+
+# ─────────────────────────────────────────────────────────
+# Stage 2 — Build NestJS backend
+# ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS backend-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+RUN npx nx build foodtruck-backend --configuration=production
+
+# ─────────────────────────────────────────────────────────
+# Stage 3 — Image de production
+# ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copier le build NestJS compilé
+COPY --from=backend-builder /app/dist/foodtruck-backend ./dist/foodtruck-backend
+
+# Copier le build Angular dans dist/foodtruck-backend/public/
+# Angular 17+ (@angular/build:application) génère les fichiers dans browser/
+COPY --from=frontend-builder /app/dist/foodtruck-frontend/browser ./dist/foodtruck-backend/public
+
+# Installer uniquement les dépendances de production
+COPY --from=backend-builder /app/dist/foodtruck-backend/package.json ./dist/foodtruck-backend/package.json
+RUN cd dist/foodtruck-backend && npm install --omit=dev --legacy-peer-deps
+
+EXPOSE 3000
+
+CMD ["node", "dist/foodtruck-backend/main.js"]

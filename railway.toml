@@ -1,0 +1,11 @@
+[build]
+dockerfilePath = "Dockerfile.foodtruck"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 60
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "foodtruck"

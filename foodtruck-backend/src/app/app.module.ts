@@ -10,6 +10,7 @@ import { OrdersModule } from './orders/orders.module';
 import { FollowersModule } from './followers/followers.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UploadModule } from './upload/upload.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { UploadModule } from './upload/upload.module';
     NotificationsModule,
     UploadModule,
   ],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,
