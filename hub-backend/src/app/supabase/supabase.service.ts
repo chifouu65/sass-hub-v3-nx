@@ -8,6 +8,7 @@ export interface DbUser {
   email: string;
   password_hash: string | null;
   provider: string;
+  role: string;
   created_at: string;
   updated_at: string;
 }
@@ -120,10 +121,10 @@ export class SupabaseService implements OnModuleInit {
     return rows[0] ?? null;
   }
 
-  async createUser(email: string, passwordHash: string): Promise<DbUser> {
+  async createUser(email: string, passwordHash: string, role = 'customer'): Promise<DbUser> {
     const rows = await this.post<DbUser[]>(
       'users',
-      { email, password_hash: passwordHash, provider: 'email' },
+      { email, password_hash: passwordHash, provider: 'email', role },
       'return=representation',
     );
     const user = Array.isArray(rows) ? rows[0] : (rows as unknown as DbUser);

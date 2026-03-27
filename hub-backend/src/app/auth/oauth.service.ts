@@ -11,6 +11,7 @@ import { SupabaseTokenStore } from './token-store-supabase';
 export interface UserRecord {
   id: string;
   email: string;
+  role?: string;
 }
 
 export interface OAuthTokens {
@@ -54,12 +55,13 @@ export class OAuthService {
 
   // ── Token issuance ────────────────────────────────────────────────────────
 
-  async issueTokens(user: UserRecord, payload: { sub: string; email: string }) {
+  async issueTokens(user: UserRecord, payload: { sub: string; email: string; role?: string }) {
     const now = Math.floor(Date.now() / 1000);
     const accessExp = this.parseDurationSeconds(this.cfg.accessTtl);
     const refreshExp = this.parseDurationSeconds(this.cfg.refreshTtl);
 
-    const access = await new SignJWT({ ...payload, aud: this.cfg.audience })
+    const jwtPayload = { ...payload, role: user.role ?? payload.role ?? 'customer', aud: this.cfg.audience };
+    const access = await new SignJWT(jwtPayload)
       .setProtectedHeader({ alg: 'RS256', typ: 'JWT', kid: this.kid })
       .setIssuedAt()
       .setIssuer(this.cfg.issuer)
@@ -102,7 +104,7 @@ export class OAuthService {
     const hash = hashPassword(password);
     if (hash !== dbUser.password_hash) throw new UnauthorizedException('Invalid credentials');
 
-    return { id: dbUser.id, email: dbUser.email };
+    return { id: dbUser.id, email: dbUser.email, role: dbUser.role ?? 'customer' };
   }
 
   // ── Auth code exchange (PKCE) ─────────────────────────────────────────────
@@ -141,8 +143,8 @@ export class OAuthService {
     if (!dbUser) throw new UnauthorizedException('user_not_found');
 
     return this.issueTokens(
-      { id: dbUser.id, email: dbUser.email },
-      { sub: dbUser.id, email: dbUser.email },
+      { id: dbUser.id, email: dbUser.email, role: dbUser.role ?? 'customer' },
+      { sub: dbUser.id, email: dbUser.email, role: dbUser.role ?? 'customer' },
     );
   }
 
@@ -186,8 +188,8 @@ export class OAuthService {
     await this.store.rotate(rec, nextRec);
 
     const tokens = await this.issueTokens(
-      { id: dbUser.id, email: dbUser.email },
-      { sub: dbUser.id, email: dbUser.email },
+      { id: dbUser.id, email: dbUser.email, role: dbUser.role ?? 'customer' },
+      { sub: dbUser.id, email: dbUser.email, role: dbUser.role ?? 'customer' },
     );
     tokens.refresh_token = `${nextId}:${nextToken}`;
     return tokens;
@@ -195,12 +197,12 @@ export class OAuthService {
 
   // ── Register ──────────────────────────────────────────────────────────────
 
-  async registerUser(email: string, password: string): Promise<UserRecord> {
+  async registerUser(email: string, password: string, role = 'customer'): Promise<UserRecord> {
     const existing = await this.supabase.findUserByEmail(email);
     if (existing) throw new ConflictException('email_already_exists');
     const hash = hashPassword(password);
-    const user = await this.supabase.createUser(email, hash);
-    return { id: user.id, email: user.email };
+    const user = await this.supabase.createUser(email, hash, role);
+    return { id: user.id, email: user.email, role: user.role ?? role };
   }
 
   // ── Password reset ────────────────────────────────────────────────────────

@@ -18,6 +18,7 @@ interface LoginDto {
 interface RegisterDto {
   email: string;
   password: string;
+  role?: string;
 }
 
 interface ForgotPasswordDto {
@@ -109,8 +110,8 @@ export class OAuthController {
       }
 
       const tokens = await this.oauth.issueTokens(
-        { id: user.id, email: user.email },
-        { sub: user.id, email: user.email },
+        { id: user.id, email: user.email, role: (user as any).role ?? 'customer' },
+        { sub: user.id, email: user.email, role: (user as any).role ?? 'customer' },
       );
 
       this.setRefreshCookie(res, tokens.refresh_token);
@@ -123,8 +124,13 @@ export class OAuthController {
   @Public()
   @Post('/auth/register')
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const user = await this.oauth.registerUser(dto.email, dto.password);
-    const tokens = await this.oauth.issueTokens(user, { sub: user.id, email: user.email });
+    const validRoles = ['customer', 'manager'];
+    const role = validRoles.includes(dto.role ?? '') ? dto.role! : 'customer';
+    const user = await this.oauth.registerUser(dto.email, dto.password, role);
+    const tokens = await this.oauth.issueTokens(
+      { id: user.id, email: user.email, role: user.role ?? role },
+      { sub: user.id, email: user.email, role: user.role ?? role },
+    );
     this.setRefreshCookie(res, tokens.refresh_token);
     return tokens;
   }
