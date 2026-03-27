@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────
+# Stage 1 — Build NestJS hub-backend
+# ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+RUN npx nx build hub-backend --configuration=production
+
+# ─────────────────────────────────────────────────────────
+# Stage 2 — Image de production
+# ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copier le build NestJS compilé
+COPY --from=builder /app/dist/hub-backend ./dist/hub-backend
+
+# Copier les clés RSA si elles sont générées dans le dossier keys/
+COPY --from=builder /app/hub-backend/keys ./hub-backend/keys
+
+# Installer uniquement les dépendances de production
+COPY --from=builder /app/dist/hub-backend/package.json ./dist/hub-backend/package.json
+RUN cd dist/hub-backend && npm install --omit=dev --legacy-peer-deps
+
+EXPOSE 3000
+
+CMD ["node", "dist/hub-backend/main.js"]

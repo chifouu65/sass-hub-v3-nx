@@ -24,7 +24,8 @@ async function bootstrap() {
       app.useStaticAssets(publicPath);
       // Fallback SPA : toute route non-/api renvoie index.html (Angular router)
       app.use((req: any, res: any, next: any) => {
-        if (!req.path.startsWith('/api')) {
+        // Laisser passer /api/* (backend) et /hub-api/* (proxy OAuth)
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/hub-api')) {
           res.sendFile(join(publicPath, 'index.html'));
         } else {
           next();
