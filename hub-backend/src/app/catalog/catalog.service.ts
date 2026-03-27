@@ -16,6 +16,23 @@ export interface AppDescriptor {
 export class CatalogService {
   private readonly apps: AppDescriptor[] = [
     {
+      id: 'myfoodtruck',
+      name: 'MyFoodTruck',
+      tagline: 'Gérez votre food truck, trouvez vos clients',
+      description: 'Plateforme complète pour les gérants de food trucks : localisation en temps réel, gestion du menu, commandes click & collect, et fidélisation des clients.',
+      features: [
+        'Localisation GPS en temps réel',
+        'Menu & catégories personnalisables',
+        'Commandes click & collect',
+        'Notifications d\'ouverture aux abonnés',
+        'Tableau de bord gérant',
+        'Suivi des statuts de commandes',
+      ],
+      plans: ['free', 'starter', 'pro'],
+      category: 'Food & Commerce',
+      url: 'http://localhost:4201',
+    },
+    {
       id: 'linkedin-ai',
       name: 'LinkedIn AI Messaging',
       tagline: 'Automatise ta prospection LinkedIn avec l\'IA',

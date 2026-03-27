@@ -7,9 +7,12 @@
     "start:hub-backend": "npm exec nx run hub-backend:serve -- --port=4301 --inspect=false",
     "start:linkedin-frontend": "npm exec nx run linkedin-ai-frontend:serve -- --port=4300",
     "start:linkedin-backend": "npm exec nx run linkedin-ai-backend:serve -- --port=4302 --inspect=false",
+    "start:foodtruck-frontend": "npm exec nx run foodtruck-frontend:serve -- --port=4201",
+    "start:foodtruck-backend": "npm exec nx run foodtruck-backend:serve -- --port=4303 --inspect=false",
     "start:hub": "npm-run-all -p start:hub-frontend start:hub-backend",
     "start:linkedin": "npm-run-all -p start:linkedin-frontend start:linkedin-backend",
-    "start:all": "npm-run-all -p start:hub start:linkedin"
+    "start:foodtruck": "npm-run-all -p start:foodtruck-frontend start:foodtruck-backend",
+    "start:all": "npm-run-all -p start:hub start:linkedin start:foodtruck"
   },
   "private": true,
   "devDependencies": {

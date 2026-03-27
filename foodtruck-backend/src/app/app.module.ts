@@ -1,0 +1,33 @@
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { SupabaseModule } from './supabase/supabase.module';
+import { AuthGuard } from './auth/auth.guard';
+import { TrucksModule } from './trucks/trucks.module';
+import { LocationsModule } from './locations/locations.module';
+import { SchedulesModule } from './schedules/schedules.module';
+import { MenuModule } from './menu/menu.module';
+import { OrdersModule } from './orders/orders.module';
+import { FollowersModule } from './followers/followers.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { UploadModule } from './upload/upload.module';
+
+@Module({
+  imports: [
+    SupabaseModule,
+    TrucksModule,
+    LocationsModule,
+    SchedulesModule,
+    MenuModule,
+    OrdersModule,
+    FollowersModule,
+    NotificationsModule,
+    UploadModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+  ],
+})
+export class AppModule {}

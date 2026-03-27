@@ -65,3 +65,32 @@ Before using any Angular/Angular Material API, always check the version constrai
 
 - Fix TypeScript strict errors with explicit interfaces (e.g., `AuthenticatedRequest extends Request`).
 - Use granular `catch` blocks — avoid swallowing errors silently.
+
+---
+
+## Tests unitaires — règles obligatoires
+
+### Écriture des tests
+- **TOUJOURS** écrire des tests unitaires pour tout nouveau code : services NestJS, guards, pipes, composants Angular critiques.
+- Placer les fichiers de test à côté du fichier source : `foo.service.spec.ts` à côté de `foo.service.ts`.
+- **NestJS** : utiliser `@nestjs/testing` (`Test.createTestingModule`) avec des mocks pour les dépendances externes (Supabase, HTTP).
+- **Angular** : utiliser `TestBed` avec `provideHttpClientTesting()` pour mocker les appels HTTP. Tester les signals via leurs getters (`service.mySignal()`).
+- Couvrir a minima : le cas nominal, les cas d'erreur, et les cas limites (valeur nulle, liste vide).
+
+### Vérification obligatoire après chaque modification de code
+- **Après tout ajout ou modification de code**, toujours lancer le type-check TypeScript pour détecter les erreurs avant de déclarer la tâche terminée :
+  ```bash
+  # Backend
+  node node_modules/typescript/bin/tsc --project foodtruck-backend/tsconfig.app.json --noEmit
+  node node_modules/typescript/bin/tsc --project hub-backend/tsconfig.app.json --noEmit
+
+  # Frontend
+  node node_modules/typescript/bin/tsc --project foodtruck-frontend/tsconfig.app.json --noEmit
+  node node_modules/typescript/bin/tsc --project hub-frontend/tsconfig.app.json --noEmit
+  ```
+- Lancer les tests unitaires du projet modifié via Nx :
+  ```bash
+  npm exec nx run <project>:test
+  ```
+- **Ne jamais déclarer une tâche terminée si des erreurs TypeScript ou des tests échouent.**
+- En cas d'erreur, corriger immédiatement puis relancer la vérification jusqu'à zéro erreur.

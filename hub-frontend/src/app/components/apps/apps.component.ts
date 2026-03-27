@@ -48,6 +48,11 @@ interface UserAppsResponse {
 // ── Metadata visuelle par app ID ─────────────────────────────────────────────
 
 const APP_META: Record<string, Pick<AppEnriched, 'icon' | 'iconBg' | 'iconColor'>> = {
+  'myfoodtruck': {
+    icon: 'lunch_dining',
+    iconBg: 'rgba(249,115,22,0.12)',
+    iconColor: '#f97316',
+  },
   'linkedin-ai': {
     icon: 'smart_toy',
     iconBg: 'rgba(99,102,241,0.12)',
