@@ -1,7 +1,10 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
@@ -9,268 +12,229 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [
+    FormsModule,
+    RouterModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+  ],
   template: `
-    <div class="page">
+    <div class="login-container">
+      <mat-card class="login-card" appearance="outlined">
+        <mat-card-content>
 
-      <div class="card">
-
-        <!-- Header -->
-        <div class="card-header">
-          <a routerLink="/welcome" class="back-link">
-            <mat-icon>arrow_back</mat-icon>
-            Retour
-          </a>
-          <div class="icon-wrap">
-            <mat-icon>storefront</mat-icon>
-          </div>
-          <h1>Créer mon compte client</h1>
-          <p>Rejoignez MyFoodTruck pour commander chez vos food trucks préférés.</p>
-        </div>
-
-        <!-- Error -->
-        <div *ngIf="auth.error()" class="error-banner">
-          <mat-icon>error_outline</mat-icon>
-          <span>{{ auth.error() }}</span>
-        </div>
-
-        <!-- Form -->
-        <form [formGroup]="form" (ngSubmit)="submit()" class="form" novalidate>
-
-          <div class="field">
-            <label for="email">Adresse e-mail</label>
-            <input
-              id="email"
-              type="email"
-              formControlName="email"
-              placeholder="vous@exemple.com"
-              autocomplete="email"
-            />
-            <span *ngIf="form.get('email')?.touched && form.get('email')?.invalid" class="field-error">
-              Adresse e-mail invalide.
-            </span>
+          <!-- Header -->
+          <div class="login-header">
+            <div class="logo-icon">
+              <mat-icon>lunch_dining</mat-icon>
+            </div>
+            <h1>MyFoodTruck</h1>
+            <p class="login-subtitle">Crée ton compte client</p>
           </div>
 
-          <div class="field">
-            <label for="password">Mot de passe</label>
-            <input
-              id="password"
-              type="password"
-              formControlName="password"
-              placeholder="8 caractères minimum"
-              autocomplete="new-password"
-            />
-            <span *ngIf="form.get('password')?.touched && form.get('password')?.hasError('minlength')" class="field-error">
-              8 caractères minimum.
-            </span>
-          </div>
+          <!-- Form -->
+          <form (ngSubmit)="onRegister()" class="login-form">
 
-          <div class="field">
-            <label for="confirm">Confirmer le mot de passe</label>
-            <input
-              id="confirm"
-              type="password"
-              formControlName="confirm"
-              placeholder="Répétez votre mot de passe"
-              autocomplete="new-password"
-            />
-            <span *ngIf="form.get('confirm')?.touched && form.hasError('passwordMismatch')" class="field-error">
-              Les mots de passe ne correspondent pas.
-            </span>
-          </div>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Email</mat-label>
+              <input matInput type="email"
+                [ngModel]="email()" (ngModelChange)="email.set($event)"
+                name="email" placeholder="ton@email.com" required />
+              <mat-icon matPrefix>email</mat-icon>
+            </mat-form-field>
 
-          <button
-            type="submit"
-            class="btn-submit"
-            [disabled]="auth.loading() || form.invalid"
-          >
-            <mat-spinner *ngIf="auth.loading()" diameter="18"></mat-spinner>
-            <mat-icon *ngIf="!auth.loading()">person_add</mat-icon>
-            {{ auth.loading() ? 'Création en cours…' : 'Créer mon compte' }}
-          </button>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Mot de passe</mat-label>
+              <input matInput [type]="hidePassword() ? 'password' : 'text'"
+                [ngModel]="password()" (ngModelChange)="password.set($event)"
+                name="password" placeholder="Au moins 8 caractères" required minlength="8" />
+              <mat-icon matPrefix>lock</mat-icon>
+              <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())">
+                <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </mat-form-field>
 
-        </form>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Confirmer le mot de passe</mat-label>
+              <input matInput [type]="hideConfirm() ? 'password' : 'text'"
+                [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
+                name="confirmPassword" placeholder="Répète ton mot de passe" required />
+              <mat-icon matPrefix>lock_reset</mat-icon>
+              <button mat-icon-button matSuffix type="button" (click)="hideConfirm.set(!hideConfirm())">
+                <mat-icon>{{ hideConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              @if (passwordMismatch) {
+                <mat-error>Les mots de passe ne correspondent pas</mat-error>
+              }
+            </mat-form-field>
 
-      </div>
+            @if (auth.error()) {
+              <div class="error-banner">
+                <mat-icon>error_outline</mat-icon>
+                <span>{{ auth.error() }}</span>
+              </div>
+            }
 
+            <button mat-flat-button type="submit" class="submit-btn"
+              [disabled]="auth.loading() || passwordMismatch || !email() || password().length < 8">
+              @if (auth.loading()) {
+                <mat-spinner diameter="20"></mat-spinner>
+              } @else {
+                Créer mon compte
+              }
+            </button>
+
+          </form>
+
+          <p class="switch-hint">
+            Déjà un compte ?
+            <a routerLink="/welcome" class="link-btn">Se connecter via le Hub</a>
+          </p>
+
+        </mat-card-content>
+      </mat-card>
     </div>
   `,
   styles: [`
-    .page {
-      min-height: 100vh;
-      background: #0a0a0f;
+    .login-container {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 32px 16px;
+      min-height: calc(100vh - 56px);
     }
 
-    .card {
-      background: #111118;
-      border: 1px solid #27273a;
-      border-radius: 16px;
-      padding: 40px 36px;
+    .login-card {
       width: 100%;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
+      max-width: 440px;
+      background: var(--bg-card) !important;
+      border-color: var(--border) !important;
+      border-radius: var(--radius-lg) !important;
     }
 
-    .card-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    .login-card mat-card-content {
+      padding: 40px 32px !important;
+    }
+
+    .login-header {
       text-align: center;
-      gap: 12px;
+      margin-bottom: 28px;
     }
 
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 13px;
-      color: #8b8ba0;
-      text-decoration: none;
-      align-self: flex-start;
-      transition: color 150ms;
-
-      mat-icon { font-size: 16px; width: 16px; height: 16px; }
-
-      &:hover { color: #ececf0; }
-    }
-
-    .icon-wrap {
+    .logo-icon {
       width: 56px;
       height: 56px;
-      border-radius: 14px;
-      background: rgba(249, 115, 22, 0.12);
-      border: 1px solid rgba(249, 115, 22, 0.25);
+      border-radius: var(--radius-md);
+      background: var(--accent-muted);
+      color: var(--accent);
       display: flex;
       align-items: center;
       justify-content: center;
+      margin: 0 auto 16px;
 
-      mat-icon { font-size: 26px; width: 26px; height: 26px; color: #fb923c; }
+      mat-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+      }
     }
 
-    h1 {
-      font-size: 22px;
+    .login-header h1 {
+      font-size: 1.5rem;
       font-weight: 700;
-      color: #ececf0;
-      margin: 0;
+      letter-spacing: -0.02em;
     }
 
-    p {
-      font-size: 14px;
-      color: #8b8ba0;
-      margin: 0;
-      line-height: 1.5;
+    .login-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 4px;
     }
 
-    /* Error banner */
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
     .error-banner {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-size: 13px;
-      color: #f87171;
-
-      mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
-    }
-
-    /* Form */
-    .form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    label {
-      font-size: 13px;
-      font-weight: 500;
-      color: #ececf0;
-    }
-
-    input {
-      background: #0a0a0f;
-      border: 1px solid #27273a;
-      border-radius: 8px;
+      background: var(--danger-muted);
+      color: var(--danger);
       padding: 10px 14px;
-      font-size: 14px;
-      color: #ececf0;
-      outline: none;
-      transition: border-color 150ms;
-      font-family: inherit;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
 
-      &::placeholder { color: #5c5c70; }
-      &:focus { border-color: #fb923c; }
-      &:disabled { opacity: 0.5; cursor: not-allowed; }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
     }
 
-    .field-error {
-      font-size: 12px;
-      color: #f87171;
-    }
-
-    .btn-submit {
+    .submit-btn {
+      width: 100%;
+      height: 44px;
+      background: var(--accent) !important;
+      color: white !important;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-radius: var(--radius-sm) !important;
+      margin-top: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: #fb923c;
-      color: #0a0a0f;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 150ms;
+    }
 
-      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .switch-hint {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 20px;
+    }
 
-      &:hover:not(:disabled) { background: #f97316; }
-      &:disabled { opacity: 0.5; cursor: not-allowed; }
+    .link-btn {
+      color: var(--accent) !important;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 480px) {
+      .login-card mat-card-content {
+        padding: 28px 20px !important;
+      }
+
+      .login-container {
+        align-items: flex-start;
+        padding-top: 24px;
+      }
     }
   `],
 })
 export class RegisterComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly fb = inject(FormBuilder);
 
-  readonly form = this.fb.group(
-    {
-      email:    ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      confirm:  ['', Validators.required],
-    },
-    { validators: (g) => {
-        const pw = g.get('password')?.value;
-        const co = g.get('confirm')?.value;
-        return pw && co && pw !== co ? { passwordMismatch: true } : null;
-      }
-    }
-  );
+  readonly email           = signal('');
+  readonly password        = signal('');
+  readonly confirmPassword = signal('');
+  readonly hidePassword    = signal(true);
+  readonly hideConfirm     = signal(true);
 
-  async submit(): Promise<void> {
-    if (this.form.invalid) return;
-    const { email, password } = this.form.getRawValue();
-    await this.auth.register(email!, password!);
-    if (!this.auth.error()) {
-      this.router.navigate(['/discover']);
+  get passwordMismatch(): boolean {
+    return this.confirmPassword().length > 0 && this.password() !== this.confirmPassword();
+  }
+
+  async onRegister(): Promise<void> {
+    if (this.passwordMismatch) return;
+    await this.auth.register(this.email(), this.password());
+    if (this.auth.isAuthenticated()) {
+      await this.router.navigate(['/discover']);
     }
   }
 }
