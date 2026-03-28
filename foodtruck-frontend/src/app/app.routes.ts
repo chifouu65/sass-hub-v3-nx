@@ -7,12 +7,15 @@ import { AuthService } from './core/services/auth.service';
 
 export const appRoutes: Route[] = [
   {
-    // After SSO: redirect managers to dashboard, everyone else to /discover
+    // Root: authenticated → role-based redirect; unauthenticated → /welcome
     path: '',
     pathMatch: 'full',
     canActivate: [() => {
       const auth = inject(AuthService);
       const router = inject(Router);
+      if (!auth.isAuthenticated()) {
+        return router.createUrlTree(['/welcome']);
+      }
       if (auth.isManager()) {
         return router.createUrlTree(['/manager/dashboard']);
       }
@@ -22,6 +25,16 @@ export const appRoutes: Route[] = [
       import('./features/customer/discover/discover.component').then(
         m => m.DiscoverComponent
       ),
+  },
+  {
+    path: 'welcome',
+    loadComponent: () =>
+      import('./features/auth/welcome/welcome.component').then(m => m.WelcomeComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./features/auth/register/register.component').then(m => m.RegisterComponent),
   },
   {
     path: 'discover',

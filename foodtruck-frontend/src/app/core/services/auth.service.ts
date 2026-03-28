@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -66,6 +66,28 @@ export class AuthService {
     }
   }
 
+  async register(email: string, password: string): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const result = await firstValueFrom(
+        this.http.post<{ access_token?: string }>(
+          `${this.apiBase}/auth/register`,
+          { email, password, role: 'customer' },
+          { withCredentials: true }
+        )
+      );
+      if (!result.access_token) throw new Error('missing_access_token');
+      this.accessToken.set(result.access_token);
+      await this.fetchMe(result.access_token);
+    } catch (e) {
+      this.clearSession();
+      this.error.set(this.extractError(e));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   async logout(): Promise<void> {
     try {
       await firstValueFrom(
@@ -92,4 +114,10 @@ export class AuthService {
     this.user.set(null);
   }
 
+  private extractError(e: unknown): string {
+    if (e instanceof HttpErrorResponse) {
+      return (e.error as { message?: string })?.message ?? `Error ${e.status}`;
+    }
+    return e instanceof Error ? e.message : 'Unknown error';
+  }
 }
