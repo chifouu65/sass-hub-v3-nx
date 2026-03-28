@@ -100,12 +100,6 @@ import { NotificationService } from './core/services/notification.service';
           <span>Gérant</span>
         </div>
         <mat-divider *ngIf="auth.isAuthenticated()"></mat-divider>
-        <button mat-menu-item *ngIf="!auth.isAuthenticated()" routerLink="/login">
-          <mat-icon>login</mat-icon> Connexion
-        </button>
-        <button mat-menu-item *ngIf="!auth.isAuthenticated()" routerLink="/register">
-          <mat-icon>person_add</mat-icon> S'inscrire
-        </button>
         <button mat-menu-item *ngIf="auth.isManager()" routerLink="/manager/dashboard">
           <mat-icon>dashboard</mat-icon> Mon panel
         </button>
@@ -303,6 +297,6 @@ export class App {
 
   async logout(): Promise<void> {
     await this.auth.logout();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/discover']);
   }
 }

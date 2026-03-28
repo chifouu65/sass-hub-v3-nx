@@ -2,7 +2,6 @@ import { Route } from '@angular/router';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { guestGuard } from './core/guards/guest.guard';
 import { managerGuard } from './core/guards/manager.guard';
 import { AuthService } from './core/services/auth.service';
 
@@ -22,20 +21,6 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./features/customer/discover/discover.component').then(
         m => m.DiscoverComponent
-      ),
-  },
-  {
-    path: 'login',
-    canActivate: [guestGuard],
-    loadComponent: () =>
-      import('./features/auth/login/login.component').then(m => m.LoginComponent),
-  },
-  {
-    path: 'register',
-    canActivate: [guestGuard],
-    loadComponent: () =>
-      import('./features/auth/register/register.component').then(
-        m => m.RegisterComponent
       ),
   },
   {

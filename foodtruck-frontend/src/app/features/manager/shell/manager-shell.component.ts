@@ -471,6 +471,6 @@ export class ManagerShellComponent {
 
   async logout(): Promise<void> {
     await this.auth.logout();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/discover']);
   }
 }
