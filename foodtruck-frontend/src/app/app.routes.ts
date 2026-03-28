@@ -1,10 +1,29 @@
 import { Route } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { managerGuard } from './core/guards/manager.guard';
+import { AuthService } from './core/services/auth.service';
 
 export const appRoutes: Route[] = [
-  { path: '', redirectTo: '/discover', pathMatch: 'full' },
+  {
+    // After SSO: redirect managers to dashboard, everyone else to /discover
+    path: '',
+    pathMatch: 'full',
+    canActivate: [() => {
+      const auth = inject(AuthService);
+      const router = inject(Router);
+      if (auth.isManager()) {
+        return router.createUrlTree(['/manager/dashboard']);
+      }
+      return router.createUrlTree(['/discover']);
+    }],
+    loadComponent: () =>
+      import('./features/customer/discover/discover.component').then(
+        m => m.DiscoverComponent
+      ),
+  },
   {
     path: 'login',
     canActivate: [guestGuard],

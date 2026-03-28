@@ -18,6 +18,25 @@ export class AuthService {
   readonly isManager = computed(() => this.role() === 'manager');
 
   async initSession(): Promise<void> {
+    // SSO login: hub passes its JWT as ?sso_token= in the URL
+    const params = new URLSearchParams(window.location.search);
+    const ssoToken = params.get('sso_token');
+    if (ssoToken) {
+      // Clean the token from the URL immediately (avoid sharing it in history)
+      window.history.replaceState({}, '', window.location.pathname);
+      this.loading.set(true);
+      try {
+        this.accessToken.set(ssoToken);
+        await this.fetchMe(ssoToken);
+        console.log('[AuthService] SSO login OK | user:', this.user(), '| role:', this.role());
+      } catch (e) {
+        console.warn('[AuthService] SSO login failed:', e);
+        this.clearSession();
+      } finally {
+        this.loading.set(false);
+      }
+      return; // skip cookie-based restore
+    }
     await this.restoreSession();
   }
 
