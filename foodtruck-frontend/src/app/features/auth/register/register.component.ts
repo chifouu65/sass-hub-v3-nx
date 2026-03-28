@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -9,7 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, MatIconModule, MatProgressSpinnerModule],
   template: `
     <div class="page">
 
@@ -35,21 +35,20 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
 
         <!-- Form -->
-        <form (ngSubmit)="submit()" #form="ngForm" class="form" novalidate>
+        <form [formGroup]="form" (ngSubmit)="submit()" class="form" novalidate>
 
           <div class="field">
             <label for="email">Adresse e-mail</label>
             <input
               id="email"
               type="email"
-              name="email"
-              [(ngModel)]="email"
-              required
-              email
+              formControlName="email"
               placeholder="vous@exemple.com"
-              [disabled]="auth.loading()"
               autocomplete="email"
             />
+            <span *ngIf="form.get('email')?.touched && form.get('email')?.invalid" class="field-error">
+              Adresse e-mail invalide.
+            </span>
           </div>
 
           <div class="field">
@@ -57,14 +56,13 @@ import { AuthService } from '../../../core/services/auth.service';
             <input
               id="password"
               type="password"
-              name="password"
-              [(ngModel)]="password"
-              required
-              minlength="8"
+              formControlName="password"
               placeholder="8 caractères minimum"
-              [disabled]="auth.loading()"
               autocomplete="new-password"
             />
+            <span *ngIf="form.get('password')?.touched && form.get('password')?.hasError('minlength')" class="field-error">
+              8 caractères minimum.
+            </span>
           </div>
 
           <div class="field">
@@ -72,14 +70,11 @@ import { AuthService } from '../../../core/services/auth.service';
             <input
               id="confirm"
               type="password"
-              name="confirm"
-              [(ngModel)]="confirm"
-              required
+              formControlName="confirm"
               placeholder="Répétez votre mot de passe"
-              [disabled]="auth.loading()"
               autocomplete="new-password"
             />
-            <span *ngIf="confirm && password !== confirm" class="field-error">
+            <span *ngIf="form.get('confirm')?.touched && form.hasError('passwordMismatch')" class="field-error">
               Les mots de passe ne correspondent pas.
             </span>
           </div>
@@ -87,7 +82,7 @@ import { AuthService } from '../../../core/services/auth.service';
           <button
             type="submit"
             class="btn-submit"
-            [disabled]="auth.loading() || !form.valid || password !== confirm"
+            [disabled]="auth.loading() || form.invalid"
           >
             <mat-spinner *ngIf="auth.loading()" diameter="18"></mat-spinner>
             <mat-icon *ngIf="!auth.loading()">person_add</mat-icon>
@@ -254,14 +249,26 @@ import { AuthService } from '../../../core/services/auth.service';
 export class RegisterComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
 
-  email = '';
-  password = '';
-  confirm = '';
+  readonly form = this.fb.group(
+    {
+      email:    ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirm:  ['', Validators.required],
+    },
+    { validators: (g) => {
+        const pw = g.get('password')?.value;
+        const co = g.get('confirm')?.value;
+        return pw && co && pw !== co ? { passwordMismatch: true } : null;
+      }
+    }
+  );
 
   async submit(): Promise<void> {
-    if (this.password !== this.confirm) return;
-    await this.auth.register(this.email, this.password);
+    if (this.form.invalid) return;
+    const { email, password } = this.form.getRawValue();
+    await this.auth.register(email!, password!);
     if (!this.auth.error()) {
       this.router.navigate(['/discover']);
     }
