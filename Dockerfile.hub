@@ -10,6 +10,8 @@ RUN npm ci --legacy-peer-deps
 
 COPY . .
 RUN npx nx build hub-backend --configuration=production
+# Ensure keys directory exists (it's in .gitignore so may not be present in CI)
+RUN mkdir -p /app/hub-backend/keys
 
 # ─────────────────────────────────────────────────────────
 # Stage 2 — Image de production
