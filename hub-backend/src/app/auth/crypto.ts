@@ -11,8 +11,17 @@ export function ensureRsaKeyPair(privatePath: string, publicPath: string) {
   const envPub = process.env['AUTH_PUBLIC_KEY'];
   if (envPriv && envPub) {
     // Les variables peuvent avoir des \n littéraux au lieu de vrais sauts de ligne
-    const privPem = envPriv.replace(/\\n/g, '\n');
-    const pubPem = envPub.replace(/\\n/g, '\n');
+    const rawPriv = envPriv.replace(/\\n/g, '\n').trim();
+    const rawPub = envPub.replace(/\\n/g, '\n').trim();
+
+    // Si la clé n'a pas de header PEM (stockée en base64 brut), on ajoute les armures PEM
+    const privPem = rawPriv.includes('-----BEGIN')
+      ? rawPriv
+      : `-----BEGIN PRIVATE KEY-----\n${rawPriv}\n-----END PRIVATE KEY-----`;
+    const pubPem = rawPub.includes('-----BEGIN')
+      ? rawPub
+      : `-----BEGIN PUBLIC KEY-----\n${rawPub}\n-----END PUBLIC KEY-----`;
+
     return {
       privateKey: createPrivateKey(privPem),
       publicKey: createPublicKey(pubPem),
