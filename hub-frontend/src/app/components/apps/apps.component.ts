@@ -250,9 +250,11 @@ export class AppsComponent {
     });
   }
 
-  /** Ouvre l'app dans un nouvel onglet en passant le token SSO */
-  launchApp(app: AppEnriched): void {
+  /** Ouvre l'app dans un nouvel onglet en passant un token SSO frais */
+  async launchApp(app: AppEnriched): Promise<void> {
     if (app.url === '#' || app.comingSoon) return;
+    // Refresh before passing the SSO token so it's always < 15 min old
+    await this.auth.restoreSession();
     const token = this.auth.accessToken();
     const url = token ? `${app.url}?sso_token=${token}` : app.url;
     window.open(url, '_blank', 'noopener');
