@@ -7,7 +7,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiBase = '/hub-api';
   private readonly clientId = 'foodtruck-frontend';
-  private readonly redirectUri = 'http://localhost:4201/callback';
+  private readonly redirectUri = `${window.location.origin}/callback`;
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
