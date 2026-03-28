@@ -1,0 +1,8 @@
+[build]
+dockerfilePath = "Dockerfile.hub-frontend"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 60
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
