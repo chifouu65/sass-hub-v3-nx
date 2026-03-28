@@ -1,6 +1,5 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { HubProxyMiddleware } from './proxy/hub-proxy.middleware';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AuthGuard } from './auth/auth.guard';
 import { TrucksModule } from './trucks/trucks.module';
@@ -33,11 +32,4 @@ import { HealthController } from './health/health.controller';
     },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer): void {
-    // Proxifie /hub-api/* vers le hub-backend (auth OAuth)
-    consumer
-      .apply(HubProxyMiddleware)
-      .forRoutes({ path: '/hub-api/*path', method: RequestMethod.ALL });
-  }
-}
+export class AppModule {}

@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import cookieParser = require('cookie-parser');
+import axios from 'axios';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
@@ -12,6 +13,39 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 4303;
   const isProduction = process.env.NODE_ENV === 'production';
+
+  // Register hub-api proxy BEFORE NestJS routing and static assets.
+  // This bypasses Express 5 wildcard matching issues in NestJS forRoutes.
+  const hubUrl = process.env['HUB_API_URL'] ?? 'http://localhost:4301/api';
+  app.use('/hub-api', async (req: any, res: any, next: any) => {
+    const path = (req.originalUrl as string).replace(/^\/hub-api/, '');
+    const targetUrl = `${hubUrl}${path}`;
+    try {
+      const headers: Record<string, string> = {};
+      for (const [key, value] of Object.entries(req.headers as Record<string, string | string[]>)) {
+        if (key.toLowerCase() !== 'host' && key.toLowerCase() !== 'content-length') {
+          headers[key] = Array.isArray(value) ? value.join(', ') : (value ?? '');
+        }
+      }
+      const axiosRes = await axios({
+        method: req.method,
+        url: targetUrl,
+        headers,
+        data: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
+        validateStatus: () => true,
+        responseType: 'arraybuffer',
+        maxRedirects: 0,
+      });
+      for (const [key, value] of Object.entries(axiosRes.headers)) {
+        if (key.toLowerCase() === 'transfer-encoding') continue;
+        if (value !== undefined) res.setHeader(key, value as string | string[]);
+      }
+      res.status(axiosRes.status).send(axiosRes.data);
+    } catch (err) {
+      console.error('[HubProxy] error:', (err as Error).message);
+      next(err);
+    }
+  });
 
   app.setGlobalPrefix('api');
   app.use(cookieParser());
