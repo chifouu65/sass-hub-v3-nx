@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, effect, OnDestroy } from '@angular/core';
+import { Component, inject, signal, computed, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -1319,7 +1319,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
     }
   `],
 })
-export class DiscoverComponent implements OnDestroy {
+export class DiscoverComponent implements OnInit, OnDestroy {
   protected readonly truckService = inject(TruckService);
   private readonly mapService = inject(MapService);
   private readonly snackBar = inject(MatSnackBar);
@@ -1463,8 +1463,54 @@ export class DiscoverComponent implements OnDestroy {
     });
   }
 
+  ngOnInit(): void {
+    this.autoGeolocate();
+  }
+
   ngOnDestroy(): void {
     this.mapService.destroyMap('discover-map');
+  }
+
+  // ── Auto-geolocation on init ──
+  private autoGeolocate(): void {
+    if (!navigator.geolocation) return;
+    this.gpsLoading.set(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        this.userLat.set(lat);
+        this.userLng.set(lng);
+        this.sortBy.set('distance');
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
+          const res = await fetch(url, { headers: { 'Accept-Language': 'fr' } });
+          const data = await res.json();
+          if (data?.address) {
+            const a = data.address;
+            const parts = [
+              a.road ?? a.pedestrian ?? a.path,
+              a.house_number,
+              a.city ?? a.town ?? a.village ?? a.municipality,
+            ].filter(Boolean);
+            const label = parts.length > 0 ? parts.join(' ') : (data.display_name?.split(',').slice(0, 2).join(',') ?? '');
+            this.zoneQuery.set(label);
+            this.zoneLat.set(lat);
+            this.zoneLng.set(lng);
+            this.zoneLabel.set(label);
+          }
+        } catch {
+          // Reverse geocoding failed — position is still active, just no label
+        } finally {
+          this.gpsLoading.set(false);
+        }
+      },
+      () => {
+        // Permission denied or error — fail silently
+        this.gpsLoading.set(false);
+      },
+      { timeout: 8000 }
+    );
   }
 
   // ── Helpers ──
