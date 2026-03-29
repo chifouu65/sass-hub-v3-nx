@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import cookieParser = require('cookie-parser');
+import bodyParser = require('body-parser');
 import axios from 'axios';
 import { AppModule } from './app/app.module';
 
@@ -13,6 +14,12 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 4303;
   const isProduction = process.env.NODE_ENV === 'production';
+
+  // Parse JSON bodies BEFORE the hub-api proxy so req.body is available.
+  // NestJS registers its own body parser only during app.listen(), which is
+  // too late for middleware registered here.
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
 
   // Register hub-api proxy BEFORE NestJS routing and static assets.
   // This bypasses Express 5 wildcard matching issues in NestJS forRoutes.
