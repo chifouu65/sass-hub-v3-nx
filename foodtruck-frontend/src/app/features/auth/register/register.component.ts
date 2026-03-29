@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,7 +14,6 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [
     FormsModule,
-    RouterModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -92,7 +91,7 @@ import { AuthService } from '../../../core/services/auth.service';
 
           <p class="switch-hint">
             Déjà un compte ?
-            <a routerLink="/welcome" class="link-btn">Se connecter via le Hub</a>
+            <a [href]="hubLoginUrl" class="link-btn">Se connecter via le Hub</a>
           </p>
 
         </mat-card-content>
@@ -219,6 +218,8 @@ import { AuthService } from '../../../core/services/auth.service';
 export class RegisterComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+
+  readonly hubLoginUrl = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
 
   readonly email           = signal('');
   readonly password        = signal('');
