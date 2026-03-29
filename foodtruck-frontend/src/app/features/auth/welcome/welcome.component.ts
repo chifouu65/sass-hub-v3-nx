@@ -61,6 +61,9 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
             <mat-icon>person_add</mat-icon>
             Créer mon compte
           </a>
+          <a routerLink="/login" class="login-link">
+            Déjà un compte ? Se connecter
+          </a>
         </div>
 
       </div>
@@ -237,6 +240,17 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
         background: rgba(249, 115, 22, 0.2);
         border-color: rgba(249, 115, 22, 0.6);
         color: #fdba74;
+      }
+    }
+
+    .login-link {
+      font-size: 13px;
+      color: rgba(236, 236, 240, 0.5);
+      text-decoration: none;
+      margin-top: -4px;
+
+      &:hover {
+        color: rgba(236, 236, 240, 0.8);
       }
     }
   `],

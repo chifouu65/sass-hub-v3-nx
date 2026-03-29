@@ -66,6 +66,72 @@ export class AuthService {
     }
   }
 
+  // ── PKCE helpers ─────────────────────────────────────────────────────────
+
+  private generateCodeVerifier(): string {
+    const array = new Uint8Array(48);
+    crypto.getRandomValues(array);
+    return btoa(String.fromCharCode(...array))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  private async generateCodeChallenge(verifier: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(hash)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  // ── Login (PKCE) ──────────────────────────────────────────────────────────
+
+  async login(email: string, password: string): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const verifier   = this.generateCodeVerifier();
+      const challenge  = await this.generateCodeChallenge(verifier);
+      const redirectUri = window.location.origin + '/discover';
+
+      const { code } = await firstValueFrom(
+        this.http.post<{ code: string }>(
+          `${this.apiBase}/oauth/authorize`,
+          {
+            email,
+            password,
+            client_id: this.clientId,
+            code_challenge: challenge,
+            redirect_uri: redirectUri,
+          },
+          { withCredentials: true }
+        )
+      );
+
+      const result = await firstValueFrom(
+        this.http.post<{ access_token?: string }>(
+          `${this.apiBase}/oauth/token`,
+          {
+            grant_type: 'authorization_code',
+            code,
+            code_verifier: verifier,
+            redirect_uri: redirectUri,
+            client_id: this.clientId,
+          },
+          { withCredentials: true }
+        )
+      );
+
+      if (!result.access_token) throw new Error('missing_access_token');
+      this.accessToken.set(result.access_token);
+      await this.fetchMe(result.access_token);
+    } catch (e) {
+      this.clearSession();
+      this.error.set(this.extractError(e));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   async register(email: string, password: string): Promise<void> {
     this.loading.set(true);
     this.error.set(null);

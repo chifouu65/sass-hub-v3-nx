@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,7 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-login',
   standalone: true,
   imports: [
     RouterModule,
@@ -33,11 +33,11 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-icon>lunch_dining</mat-icon>
             </div>
             <h1>MyFoodTruck</h1>
-            <p class="login-subtitle">Crée ton compte client</p>
+            <p class="login-subtitle">Connexion à ton compte</p>
           </div>
 
           <!-- Form -->
-          <form (ngSubmit)="onRegister()" class="login-form">
+          <form (ngSubmit)="onLogin()" class="login-form">
 
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Email</mat-label>
@@ -51,25 +51,11 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-label>Mot de passe</mat-label>
               <input matInput [type]="hidePassword() ? 'password' : 'text'"
                 [ngModel]="password()" (ngModelChange)="password.set($event)"
-                name="password" placeholder="Au moins 8 caractères" required minlength="8" />
+                name="password" placeholder="Ton mot de passe" required />
               <mat-icon matPrefix>lock</mat-icon>
               <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())">
                 <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Confirmer le mot de passe</mat-label>
-              <input matInput [type]="hideConfirm() ? 'password' : 'text'"
-                [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
-                name="confirmPassword" placeholder="Répète ton mot de passe" required />
-              <mat-icon matPrefix>lock_reset</mat-icon>
-              <button mat-icon-button matSuffix type="button" (click)="hideConfirm.set(!hideConfirm())">
-                <mat-icon>{{ hideConfirm() ? 'visibility_off' : 'visibility' }}</mat-icon>
-              </button>
-              @if (passwordMismatch) {
-                <mat-error>Les mots de passe ne correspondent pas</mat-error>
-              }
             </mat-form-field>
 
             @if (auth.error()) {
@@ -80,19 +66,19 @@ import { AuthService } from '../../../core/services/auth.service';
             }
 
             <button mat-flat-button type="submit" class="submit-btn"
-              [disabled]="auth.loading() || passwordMismatch || !email() || password().length < 8">
+              [disabled]="auth.loading() || !email() || !password()">
               @if (auth.loading()) {
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
-                Créer mon compte
+                Se connecter
               }
             </button>
 
           </form>
 
           <p class="switch-hint">
-            Déjà un compte ?
-            <a routerLink="/login" class="link-btn">Se connecter</a>
+            Pas encore de compte ?
+            <a routerLink="/register" class="link-btn">Créer un compte</a>
           </p>
 
         </mat-card-content>
@@ -216,23 +202,16 @@ import { AuthService } from '../../../core/services/auth.service';
     }
   `],
 })
-export class RegisterComponent {
+export class LoginComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly email           = signal('');
-  readonly password        = signal('');
-  readonly confirmPassword = signal('');
-  readonly hidePassword    = signal(true);
-  readonly hideConfirm     = signal(true);
+  readonly email        = signal('');
+  readonly password     = signal('');
+  readonly hidePassword = signal(true);
 
-  get passwordMismatch(): boolean {
-    return this.confirmPassword().length > 0 && this.password() !== this.confirmPassword();
-  }
-
-  async onRegister(): Promise<void> {
-    if (this.passwordMismatch) return;
-    await this.auth.register(this.email(), this.password());
+  async onLogin(): Promise<void> {
+    await this.auth.login(this.email(), this.password());
     if (this.auth.isAuthenticated()) {
       await this.router.navigate(['/discover']);
     }
