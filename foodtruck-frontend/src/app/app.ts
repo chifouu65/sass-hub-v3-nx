@@ -297,6 +297,6 @@ export class App {
 
   async logout(): Promise<void> {
     await this.auth.logout();
-    this.router.navigate(['/discover']);
+    this.router.navigate(['/welcome']);
   }
 }

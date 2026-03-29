@@ -38,6 +38,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'discover',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/customer/discover/discover.component').then(
         m => m.DiscoverComponent
@@ -45,6 +46,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'truck/:id',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./features/truck-profile/truck-profile.component').then(
         m => m.TruckProfileComponent
