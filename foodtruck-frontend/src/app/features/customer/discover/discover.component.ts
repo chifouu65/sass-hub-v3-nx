@@ -1271,19 +1271,29 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
     /* ─── Responsive ─── */
     @media (max-width: 900px) {
+      /* Sidebar becomes a slide-over drawer */
       .filters-sidebar {
         position: fixed;
-        top: 0;
+        top: 56px;           /* below navbar */
         left: 0;
         bottom: 0;
-        z-index: 1000;
-        width: 280px;
+        z-index: 190;
+        width: min(300px, 85vw);
         transform: translateX(-100%);
-        box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+        box-shadow: 4px 0 32px rgba(0,0,0,0.7);
+        overflow-y: auto;
 
-        &.open {
-          transform: translateX(0);
-        }
+        &.open { transform: translateX(0); }
+      }
+
+      /* Overlay behind drawer */
+      .filters-sidebar.open::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(2px);
       }
 
       .sidebar-close {
@@ -1298,23 +1308,50 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
       }
     }
 
+    /* Extra offset on mobile — account for bottom nav (64px) */
+    @media (max-width: 767px) {
+      .filters-sidebar {
+        bottom: 64px;
+      }
+    }
+
     @media (max-width: 640px) {
-      .hero { padding: 48px 16px 40px; }
+      .hero {
+        padding: 32px 16px 28px;
+      }
+
+      .hero-eyebrow { font-size: 10px; padding: 4px 12px; }
 
       .search-row {
         flex-direction: column;
+        gap: 8px;
         .zone-box { min-width: unset; }
-        .gps-btn { width: 100%; border-radius: 12px; }
+        .gps-btn { width: 100%; border-radius: 12px; height: 44px; }
+        .search-box, .zone-box { height: 44px; }
       }
+
+      .zone-chip { font-size: 12px; padding: 5px 12px; }
 
       .trucks-grid {
         grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 12px;
       }
 
       .toolbar {
+        padding: 8px 12px;
         flex-wrap: wrap;
         gap: 8px;
         .active-chips { order: 3; width: 100%; }
+      }
+
+      /* Tighter map on mobile */
+      .map-wrapper { height: 320px; }
+    }
+
+    @media (min-width: 641px) and (max-width: 900px) {
+      .trucks-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
   `],
@@ -1349,7 +1386,7 @@ export class DiscoverComponent implements OnInit, OnDestroy {
 
   // ── UI State ──
   readonly viewMode = signal<ViewMode>('list');
-  readonly filtersOpen = signal(true);
+  readonly filtersOpen = signal(window.innerWidth >= 900);
   searchFocused = false;
   zoneFocused = false;
 

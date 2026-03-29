@@ -1,7 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,7 +14,6 @@ import { AuthService } from '../../../core/services/auth.service';
   imports: [
     RouterModule,
     FormsModule,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -23,21 +21,56 @@ import { AuthService } from '../../../core/services/auth.service';
     MatProgressSpinnerModule,
   ],
   template: `
-    <div class="login-container">
-      <mat-card class="login-card" appearance="outlined">
-        <mat-card-content>
+    <div class="auth-layout">
 
-          <!-- Header -->
-          <div class="login-header">
-            <div class="logo-icon">
+      <!-- ── Left panel (desktop only) ── -->
+      <aside class="auth-panel">
+        <div class="panel-inner">
+          <div class="panel-logo">
+            <mat-icon>lunch_dining</mat-icon>
+          </div>
+          <h2 class="panel-title">Bienvenue sur<br/><span>MyFoodTruck</span></h2>
+          <p class="panel-sub">La plateforme de food trucks la plus proche de vous.</p>
+
+          <ul class="panel-features">
+            <li>
+              <div class="feat-icon"><mat-icon>explore</mat-icon></div>
+              <div>
+                <strong>Découverte géolocalisée</strong>
+                <span>Trouvez les trucks ouverts autour de vous</span>
+              </div>
+            </li>
+            <li>
+              <div class="feat-icon"><mat-icon>restaurant_menu</mat-icon></div>
+              <div>
+                <strong>Menus en temps réel</strong>
+                <span>Consultez disponibilités et prix à l'instant</span>
+              </div>
+            </li>
+            <li>
+              <div class="feat-icon"><mat-icon>receipt_long</mat-icon></div>
+              <div>
+                <strong>Suivi de commande</strong>
+                <span>Soyez notifié à chaque étape</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- ── Right panel (form) ── -->
+      <main class="auth-form-side">
+        <div class="form-wrapper">
+
+          <div class="form-header">
+            <div class="form-logo">
               <mat-icon>lunch_dining</mat-icon>
             </div>
-            <h1>MyFoodTruck</h1>
-            <p class="login-subtitle">Connexion à ton compte</p>
+            <h1>Connexion</h1>
+            <p>Heureux de vous revoir 👋</p>
           </div>
 
-          <!-- Form -->
-          <form (ngSubmit)="onLogin()" class="login-form">
+          <form (ngSubmit)="onLogin()" class="auth-form">
 
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Email</mat-label>
@@ -51,9 +84,10 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-label>Mot de passe</mat-label>
               <input matInput [type]="hidePassword() ? 'password' : 'text'"
                 [ngModel]="password()" (ngModelChange)="password.set($event)"
-                name="password" placeholder="Ton mot de passe" required />
+                name="password" required />
               <mat-icon matPrefix>lock</mat-icon>
-              <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())">
+              <button mat-icon-button matSuffix type="button"
+                      (click)="hidePassword.set(!hidePassword())">
                 <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
             </mat-form-field>
@@ -70,6 +104,7 @@ import { AuthService } from '../../../core/services/auth.service';
               @if (auth.loading()) {
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
+                <mat-icon>login</mat-icon>
                 Se connecter
               }
             </button>
@@ -78,127 +113,241 @@ import { AuthService } from '../../../core/services/auth.service';
 
           <p class="switch-hint">
             Pas encore de compte ?
-            <a routerLink="/register" class="link-btn">Créer un compte</a>
+            <a routerLink="/register" class="link-accent">Créer un compte</a>
           </p>
 
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </main>
+
     </div>
   `,
   styles: [`
-    .login-container {
+    /* ════════════════════════════════════════
+       LAYOUT
+    ════════════════════════════════════════ */
+    .auth-layout {
       display: flex;
-      align-items: center;
-      justify-content: center;
       min-height: calc(100vh - 56px);
     }
 
-    .login-card {
-      width: 100%;
-      max-width: 440px;
-      background: var(--bg-card) !important;
-      border-color: var(--border) !important;
-      border-radius: var(--radius-lg) !important;
+    /* ── Left panel ── */
+    .auth-panel {
+      flex: 0 0 420px;
+      background: linear-gradient(160deg, #16101a 0%, #0f1520 100%);
+      border-right: 1px solid #27273a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        width: 400px; height: 400px;
+        background: radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%);
+        top: -100px; left: -100px;
+        pointer-events: none;
+      }
+      &::after {
+        content: '';
+        position: absolute;
+        width: 300px; height: 300px;
+        background: radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%);
+        bottom: -80px; right: -60px;
+        pointer-events: none;
+      }
     }
 
-    .login-card mat-card-content {
-      padding: 40px 32px !important;
+    .panel-inner {
+      position: relative;
+      z-index: 1;
     }
 
-    .login-header {
-      text-align: center;
+    .panel-logo {
+      width: 60px; height: 60px;
+      background: rgba(249,115,22,0.12);
+      border: 1px solid rgba(249,115,22,0.25);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       margin-bottom: 28px;
+
+      mat-icon { font-size: 30px; width: 30px; height: 30px; color: #fb923c; }
     }
 
-    .logo-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: var(--radius-md);
-      background: var(--accent-muted);
-      color: var(--accent);
+    .panel-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ececf0;
+      line-height: 1.2;
+      margin-bottom: 12px;
+
+      span { color: #fb923c; }
+    }
+
+    .panel-sub {
+      font-size: 14px;
+      color: #8b8ba0;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    .panel-features {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+
+      li {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+
+        div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        strong {
+          font-size: 14px;
+          font-weight: 600;
+          color: #d4d4e0;
+          display: block;
+        }
+        span {
+          font-size: 12px;
+          color: #8b8ba0;
+        }
+      }
+    }
+
+    .feat-icon {
+      width: 36px; height: 36px;
+      flex-shrink: 0;
+      background: rgba(249,115,22,0.1);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      mat-icon { font-size: 18px; width: 18px; height: 18px; color: #fb923c; }
+    }
+
+    /* ── Right / form side ── */
+    .auth-form-side {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      background: #0a0a0f;
+    }
+
+    .form-wrapper {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .form-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .form-logo {
+      width: 52px; height: 52px;
+      background: rgba(249,115,22,0.1);
+      border: 1px solid rgba(249,115,22,0.2);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto 16px;
-
-      mat-icon {
-        font-size: 28px;
-        width: 28px;
-        height: 28px;
-      }
+      mat-icon { font-size: 26px; width: 26px; height: 26px; color: #fb923c; }
     }
 
-    .login-header h1 {
-      font-size: 1.5rem;
+    .form-header h1 {
+      font-size: 22px;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      color: #ececf0;
+      margin-bottom: 6px;
     }
 
-    .login-subtitle {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      margin-top: 4px;
+    .form-header p {
+      font-size: 14px;
+      color: #8b8ba0;
     }
 
-    .login-form {
+    /* ── Form ── */
+    .auth-form {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
 
-    .full-width {
-      width: 100%;
-    }
+    .full-width { width: 100%; }
 
     .error-banner {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--danger-muted);
-      color: var(--danger);
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.25);
+      color: #f87171;
       padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-
-      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+      border-radius: 8px;
+      font-size: 13px;
+      mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
     }
 
     .submit-btn {
       width: 100%;
-      height: 44px;
-      background: var(--accent) !important;
+      height: 46px;
+      background: #f97316 !important;
       color: white !important;
       font-weight: 600;
-      font-size: 0.95rem;
-      border-radius: var(--radius-sm) !important;
+      font-size: 15px;
+      border-radius: 10px !important;
       margin-top: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
+      transition: background 150ms ease !important;
+
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+      &:hover:not(:disabled) { background: #fb923c !important; }
+      &:disabled { opacity: 0.5; }
     }
 
     .switch-hint {
       text-align: center;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
+      font-size: 13px;
+      color: #8b8ba0;
       margin-top: 20px;
     }
-
-    .link-btn {
-      color: var(--accent) !important;
-      font-size: 0.85rem;
+    .link-accent {
+      color: #fb923c;
+      font-weight: 600;
+      &:hover { color: #fdba74; }
     }
 
-    @media (max-width: 480px) {
-      .login-card mat-card-content {
-        padding: 28px 20px !important;
-      }
+    /* ════════════════════════════════════════
+       RESPONSIVE
+    ════════════════════════════════════════ */
+    @media (max-width: 767px) {
+      .auth-panel { display: none; }
+      .auth-form-side { padding: 32px 20px; align-items: flex-start; padding-top: 40px; }
+      .form-wrapper { max-width: 100%; }
+    }
 
-      .login-container {
-        align-items: flex-start;
-        padding-top: 24px;
-      }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .auth-panel { flex: 0 0 340px; padding: 40px 28px; }
+      .panel-title { font-size: 22px; }
+      .panel-features { display: none; }
     }
   `],
 })
