@@ -123,11 +123,20 @@ import { AuthService } from '../../../core/services/auth.service';
   `,
   styles: [`
     /* ════════════════════════════════════════
+       ANIMATIONS
+    ════════════════════════════════════════ */
+    @keyframes authFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ════════════════════════════════════════
        LAYOUT
     ════════════════════════════════════════ */
     .auth-layout {
       display: flex;
       min-height: calc(100vh - 56px);
+      animation: authFadeIn 350ms ease both;
     }
 
     /* ── Left panel ── */
@@ -249,11 +258,13 @@ import { AuthService } from '../../../core/services/auth.service';
     .form-wrapper {
       width: 100%;
       max-width: 400px;
+      animation: authFadeIn 400ms 80ms ease both;
     }
 
     .form-header {
       text-align: center;
       margin-bottom: 32px;
+      animation: authFadeIn 400ms 120ms ease both;
     }
 
     .form-logo {

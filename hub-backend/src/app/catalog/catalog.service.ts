@@ -30,7 +30,7 @@ export class CatalogService {
       ],
       plans: ['free', 'starter', 'pro'],
       category: 'Food & Commerce',
-      url: process.env['MYFOODTRUCK_APP_URL'] ?? 'http://localhost:4201',
+      url: process.env['MYFOODTRUCK_APP_URL'] ?? 'https://mft.up.railway.app',
     },
     {
       id: 'linkedin-ai',

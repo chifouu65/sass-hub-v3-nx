@@ -287,10 +287,21 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
             class="list-pane"
             [class.hidden]="viewMode() === 'map'"
           >
-            <!-- Loading -->
-            <div *ngIf="truckService.trucks.isLoading()" class="state-box">
-              <mat-spinner diameter="36"></mat-spinner>
-              <p>Chargement des food trucks…</p>
+            <!-- Loading skeletons -->
+            <div *ngIf="truckService.trucks.isLoading()" class="trucks-grid skeleton-grid">
+              <div *ngFor="let i of skeletonItems" class="skeleton-card">
+                <div class="sk-media skeleton"></div>
+                <div class="sk-body">
+                  <div class="sk-row">
+                    <div class="sk-line sk-name skeleton"></div>
+                    <div class="sk-badge skeleton"></div>
+                  </div>
+                  <div class="sk-line sk-desc skeleton"></div>
+                  <div class="sk-line sk-desc-short skeleton"></div>
+                  <div class="sk-line sk-meta skeleton"></div>
+                </div>
+                <div class="sk-footer skeleton"></div>
+              </div>
             </div>
 
             <!-- Error -->
@@ -339,11 +350,23 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
                   <div *ngIf="!truck.imageUrl" class="card-placeholder">
                     <span class="placeholder-emoji">{{ cuisineEmoji(truck.cuisineType ?? '') }}</span>
                   </div>
+                  <!-- Gradient overlay for image legibility -->
+                  <div class="card-media-overlay"></div>
                   <div class="status-badge" [class.open]="truck.isOpen">
                     <span class="dot"></span>
                     {{ truck.isOpen ? 'Ouvert' : 'Fermé' }}
                   </div>
                   <div *ngIf="truck.cuisineType" class="cuisine-tag">{{ truck.cuisineType }}</div>
+                  <!-- Favorite heart button -->
+                  <button
+                    class="fav-btn"
+                    (click)="toggleFavorite($event, truck.id)"
+                    [class.active]="isFavorite(truck.id)"
+                    type="button"
+                    aria-label="Ajouter aux favoris"
+                  >
+                    <mat-icon>{{ isFavorite(truck.id) ? 'favorite' : 'favorite_border' }}</mat-icon>
+                  </button>
                 </div>
 
                 <!-- Body -->
@@ -1269,6 +1292,106 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
       transition: color 200ms, transform 200ms;
     }
 
+    /* ─── Card media overlay + fav button ─── */
+    .card-media-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 40%,
+        rgba(10, 10, 20, 0.55) 100%
+      );
+      pointer-events: none;
+    }
+
+    .fav-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(14,14,24,0.75);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #5c5c70;
+      transition: color 200ms, background 200ms, transform 200ms;
+
+      mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+      &:hover {
+        background: rgba(239,68,68,0.15);
+        color: #f87171;
+        transform: scale(1.1);
+      }
+
+      &.active {
+        color: #f87171;
+        background: rgba(239,68,68,0.18);
+      }
+    }
+
+    /* ─── Skeleton cards ─── */
+    .skeleton-grid {
+      pointer-events: none;
+    }
+
+    .skeleton-card {
+      display: flex;
+      flex-direction: column;
+      background: #111118;
+      border: 1px solid #1e1e2e;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .sk-media {
+      height: 170px;
+      flex-shrink: 0;
+      border-radius: 0;
+    }
+
+    .sk-body {
+      flex: 1;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sk-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .sk-line {
+      border-radius: 6px;
+      height: 12px;
+
+      &.sk-name { width: 55%; height: 16px; }
+      &.sk-desc { width: 90%; }
+      &.sk-desc-short { width: 65%; }
+      &.sk-meta { width: 40%; height: 10px; }
+    }
+
+    .sk-badge {
+      width: 44px;
+      height: 24px;
+      border-radius: 8px;
+    }
+
+    .sk-footer {
+      height: 38px;
+      flex-shrink: 0;
+      border-radius: 0;
+    }
+
     /* ─── Responsive ─── */
     @media (max-width: 900px) {
       /* Sidebar becomes a slide-over drawer */
@@ -1363,6 +1486,31 @@ export class DiscoverComponent implements OnInit, OnDestroy {
 
   // Expose Array for template iteration of Set
   readonly Array = Array;
+
+  // Skeleton items array for loading state (6 placeholder cards)
+  readonly skeletonItems = [1, 2, 3, 4, 5, 6];
+
+  // ── Favorites (local, stored in localStorage) ──
+  private readonly favorites = signal<Set<string>>(
+    new Set(JSON.parse(localStorage.getItem('ft_favorites') ?? '[]'))
+  );
+
+  isFavorite(truckId: string): boolean {
+    return this.favorites().has(truckId);
+  }
+
+  toggleFavorite(event: Event, truckId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const favs = new Set(this.favorites());
+    if (favs.has(truckId)) {
+      favs.delete(truckId);
+    } else {
+      favs.add(truckId);
+    }
+    this.favorites.set(favs);
+    localStorage.setItem('ft_favorites', JSON.stringify(Array.from(favs)));
+  }
 
   // ── Search ──
   readonly searchQuery = signal('');

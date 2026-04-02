@@ -34,6 +34,24 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
         </div>
       </section>
 
+      <!-- ── Stats bar ── -->
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-value">50+</span>
+          <span class="stat-label">Food trucks</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat">
+          <span class="stat-value">1 200+</span>
+          <span class="stat-label">Commandes / mois</span>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat">
+          <span class="stat-value">4.8 ★</span>
+          <span class="stat-label">Note moyenne</span>
+        </div>
+      </div>
+
       <!-- ── Cards ── -->
       <section class="cards-section">
         <div class="cards">
@@ -102,7 +120,7 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
     ════════════════════════════════════════ */
     .welcome-page {
       min-height: calc(100vh - 56px);
-      background: #0a0a0f;
+      background: #080810;
       overflow: hidden;
     }
 
@@ -114,6 +132,18 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
       text-align: center;
       padding: 80px 24px 56px;
       overflow: hidden;
+
+      /* Dot grid pattern */
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+        background-size: 28px 28px;
+        z-index: 0;
+        pointer-events: none;
+        mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 30%, transparent 80%);
+      }
     }
 
     .blob {
@@ -124,15 +154,15 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
       z-index: 0;
     }
     .blob-1 {
-      width: 500px; height: 500px;
-      background: rgba(249,115,22,0.08);
-      top: -160px; left: 50%;
+      width: 600px; height: 400px;
+      background: rgba(249,115,22,0.09);
+      top: -120px; left: 50%;
       transform: translateX(-50%);
     }
     .blob-2 {
       width: 300px; height: 300px;
-      background: rgba(139,92,246,0.06);
-      top: 40px; right: -80px;
+      background: rgba(139,92,246,0.07);
+      top: 40px; right: -60px;
     }
 
     .hero-inner {
@@ -140,6 +170,12 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
       z-index: 1;
       max-width: 680px;
       margin: 0 auto;
+      animation: fadeUp 500ms ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .eyebrow {
@@ -178,10 +214,50 @@ const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
     }
 
     /* ════════════════════════════════════════
+       STATS BAR
+    ════════════════════════════════════════ */
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 16px 24px 48px;
+      animation: fadeUp 500ms 200ms ease both;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 0 28px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #f0f0f5;
+      letter-spacing: -0.5px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #55556a;
+      font-weight: 500;
+    }
+
+    .stat-sep {
+      width: 1px;
+      height: 32px;
+      background: rgba(255,255,255,0.07);
+    }
+
+    /* ════════════════════════════════════════
        CARDS SECTION
     ════════════════════════════════════════ */
     .cards-section {
-      padding: 0 20px 64px;
+      padding: 0 20px 72px;
+      animation: fadeUp 500ms 100ms ease both;
     }
 
     .cards {

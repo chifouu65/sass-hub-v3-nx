@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -92,6 +92,25 @@ import { AuthService } from '../../../core/services/auth.service';
               </button>
             </mat-form-field>
 
+            <!-- Password strength indicator -->
+            @if (password().length > 0) {
+              <div class="strength-bar-wrap">
+                <div class="strength-bar">
+                  <div
+                    class="strength-fill"
+                    [class.weak]="passwordStrength() === 1"
+                    [class.fair]="passwordStrength() === 2"
+                    [class.good]="passwordStrength() === 3"
+                    [class.strong]="passwordStrength() === 4"
+                    [style.width.%]="passwordStrength() * 25"
+                  ></div>
+                </div>
+                <span class="strength-label" [class.weak]="passwordStrength() === 1" [class.fair]="passwordStrength() === 2" [class.good]="passwordStrength() === 3" [class.strong]="passwordStrength() === 4">
+                  {{ strengthLabel() }}
+                </span>
+              </div>
+            }
+
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Confirmer le mot de passe</mat-label>
               <input matInput [type]="hideConfirm() ? 'password' : 'text'"
@@ -138,11 +157,20 @@ import { AuthService } from '../../../core/services/auth.service';
   `,
   styles: [`
     /* ════════════════════════════════════════
+       ANIMATIONS
+    ════════════════════════════════════════ */
+    @keyframes authFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ════════════════════════════════════════
        LAYOUT
     ════════════════════════════════════════ */
     .auth-layout {
       display: flex;
       min-height: calc(100vh - 56px);
+      animation: authFadeIn 350ms ease both;
     }
 
     /* ── Left panel ── */
@@ -243,11 +271,16 @@ import { AuthService } from '../../../core/services/auth.service';
       background: #0a0a0f;
     }
 
-    .form-wrapper { width: 100%; max-width: 400px; }
+    .form-wrapper {
+      width: 100%;
+      max-width: 400px;
+      animation: authFadeIn 400ms 80ms ease both;
+    }
 
     .form-header {
       text-align: center;
       margin-bottom: 28px;
+      animation: authFadeIn 400ms 120ms ease both;
     }
 
     .form-logo {
@@ -325,6 +358,47 @@ import { AuthService } from '../../../core/services/auth.service';
       &:hover { color: #fdba74; }
     }
 
+    /* ── Password strength bar ── */
+    .strength-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: -2px 0 4px;
+      padding: 0 2px;
+      animation: authFadeIn 200ms ease both;
+    }
+
+    .strength-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .strength-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 300ms ease, background 300ms ease;
+
+      &.weak   { background: #ef4444; }
+      &.fair   { background: #f59e0b; }
+      &.good   { background: #3b82f6; }
+      &.strong { background: #22c55e; }
+    }
+
+    .strength-label {
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: color 300ms ease;
+
+      &.weak   { color: #ef4444; }
+      &.fair   { color: #f59e0b; }
+      &.good   { color: #3b82f6; }
+      &.strong { color: #22c55e; }
+    }
+
     /* ════════════════════════════════════════
        RESPONSIVE
     ════════════════════════════════════════ */
@@ -353,6 +427,23 @@ export class RegisterComponent {
   get passwordMismatch(): boolean {
     return this.confirmPassword().length > 0 && this.password() !== this.confirmPassword();
   }
+
+  /** 0 = empty, 1 = weak, 2 = fair, 3 = good, 4 = strong */
+  readonly passwordStrength = computed<number>(() => {
+    const p = this.password();
+    if (!p) return 0;
+    let score = 0;
+    if (p.length >= 8)  score++;
+    if (p.length >= 12) score++;
+    if (/[A-Z]/.test(p) && /[0-9]/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+    return Math.max(1, score) as 1 | 2 | 3 | 4;
+  });
+
+  readonly strengthLabel = computed<string>(() => {
+    const labels = ['', 'Faible', 'Moyen', 'Bon', 'Fort'];
+    return labels[this.passwordStrength()] ?? '';
+  });
 
   async onRegister(): Promise<void> {
     if (this.passwordMismatch) return;

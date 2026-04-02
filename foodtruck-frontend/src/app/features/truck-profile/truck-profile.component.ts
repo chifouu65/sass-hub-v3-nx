@@ -44,583 +44,861 @@ interface CartItem {
     MatDividerModule,
   ],
   template: `
-    <div class="profile-container">
-      <button mat-icon-button (click)="goBack()" class="back-button">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
+    <div class="profile-page">
 
-      <div *ngIf="loading()" class="loading">
-        <mat-spinner></mat-spinner>
+      <!-- ════ LOADING SKELETON ════ -->
+      <ng-container *ngIf="loading()">
+        <div class="hero-skeleton skeleton"></div>
+        <div class="info-skeleton">
+          <div class="sk-line sk-title skeleton"></div>
+          <div class="sk-line sk-sub skeleton"></div>
+          <div class="sk-line sk-sub2 skeleton"></div>
+        </div>
+      </ng-container>
+
+      <!-- ════ HERO ════ -->
+      <div class="hero" *ngIf="!loading()">
+        <!-- Background image or gradient placeholder -->
+        <div class="hero-bg">
+          <img *ngIf="truck()?.imageUrl" [src]="truck()!.imageUrl" [alt]="truck()!.name" />
+          <div *ngIf="!truck()?.imageUrl" class="hero-placeholder">
+            <span class="hero-emoji">🚚</span>
+          </div>
+        </div>
+
+        <!-- Gradient overlay -->
+        <div class="hero-gradient"></div>
+
+        <!-- Back pill -->
+        <button class="back-pill" (click)="goBack()" type="button">
+          <mat-icon>arrow_back</mat-icon>
+          Retour
+        </button>
+
+        <!-- Hero content -->
+        <div class="hero-content" *ngIf="truck()">
+          <div class="hero-badges-row">
+            <span *ngIf="truck()!.cuisineType" class="hbadge cuisine">{{ truck()!.cuisineType }}</span>
+            <span class="hbadge status" [class.open]="truck()!.isOpen">
+              <span class="dot"></span>
+              {{ truck()!.isOpen ? 'Ouvert' : 'Fermé' }}
+            </span>
+          </div>
+          <h1 class="hero-title">{{ truck()!.name }}</h1>
+          <div class="hero-meta" *ngIf="truck()!.rating || truck()!.address">
+            <span *ngIf="truck()!.rating" class="hero-rating">
+              <mat-icon>star</mat-icon>{{ truck()!.rating }}
+            </span>
+            <span *ngIf="truck()!.address" class="hero-addr">
+              <mat-icon>location_on</mat-icon>{{ truck()!.address }}
+            </span>
+          </div>
+        </div>
       </div>
 
+      <!-- ════ MAIN CONTENT ════ -->
       <ng-container *ngIf="truck() && !loading()">
-        <!-- Hero section -->
-        <div class="hero-section">
-          <div class="hero-image" *ngIf="truck()!.imageUrl">
-            <img [src]="truck()!.imageUrl" [alt]="truck()!.name" />
+
+        <!-- Info bar -->
+        <div class="info-bar">
+          <div class="info-bar-inner">
+            <p *ngIf="truck()!.description" class="truck-desc">{{ truck()!.description }}</p>
+            <button
+              *ngIf="auth.isAuthenticated() && !auth.isManager()"
+              class="follow-btn"
+              [class.following]="isFollowing()"
+              (click)="toggleFollow()"
+              type="button"
+            >
+              <mat-icon>{{ isFollowing() ? 'notifications_off' : 'notifications_active' }}</mat-icon>
+              {{ isFollowing() ? 'Ne plus suivre' : 'Suivre' }}
+            </button>
           </div>
-          <div class="hero-overlay">
-            <h1>{{ truck()!.name }}</h1>
-            <div class="hero-badges">
-              <span class="cuisine-badge">{{ truck()!.cuisineType }}</span>
-              <span class="status-badge" [class.open]="truck()!.isOpen" [class.closed]="!truck()!.isOpen">
-                {{ truck()!.isOpen ? '● Ouvert' : '● Fermé' }}
-              </span>
+        </div>
+
+        <!-- Body layout -->
+        <div class="body-layout">
+
+          <!-- ── Menu panel ── -->
+          <div class="menu-panel">
+            <div class="section-head">
+              <mat-icon>restaurant_menu</mat-icon>
+              <h2>Menu</h2>
             </div>
-          </div>
-        </div>
 
-        <!-- Truck info and follow button -->
-        <div class="truck-info-section">
-          <div class="truck-details">
-            <p *ngIf="truck()!.description" class="description">{{ truck()!.description }}</p>
-            <p *ngIf="truck()!.address" class="address">
-              <mat-icon>location_on</mat-icon>
-              {{ truck()!.address }}
-            </p>
-            <p *ngIf="truck()!.rating" class="rating">
-              <span class="stars">★★★★★</span> {{ truck()!.rating }}
-            </p>
-          </div>
-          <button
-            *ngIf="auth.isAuthenticated() && !auth.isManager()"
-            mat-raised-button
-            [color]="isFollowing() ? 'warn' : 'primary'"
-            (click)="toggleFollow()"
-            class="follow-button"
-          >
-            {{ isFollowing() ? 'Ne plus suivre' : 'Suivre' }}
-          </button>
-        </div>
+            <div *ngIf="!menu()" class="menu-empty">
+              <div class="menu-empty-icon"><mat-icon>lunch_dining</mat-icon></div>
+              <p>Menu non disponible pour l'instant.</p>
+            </div>
 
-        <!-- Menu and order cart -->
-        <div class="content-layout">
-          <!-- Menu section -->
-          <div class="menu-section">
-            <h2>Menu</h2>
-            <mat-accordion *ngIf="menu()">
-              <mat-expansion-panel *ngFor="let category of menu()!.categories">
-                <mat-expansion-panel-header>
-                  <mat-panel-title>{{ category.name }}</mat-panel-title>
-                </mat-expansion-panel-header>
-
-                <div class="menu-items">
-                  <div *ngFor="let item of category.items" class="menu-item" [class.unavailable]="!item.available">
-                    <div class="item-info">
-                      <h4>{{ item.name }} <span *ngIf="!item.available" class="unavailable-badge">Indisponible</span></h4>
-                      <p *ngIf="item.description" class="item-description">{{ item.description }}</p>
-                      <span class="price">{{ item.price | currency }}</span>
+            <div *ngIf="menu()">
+              <div *ngFor="let category of menu()!.categories; let first = first" class="menu-category" [class.first]="first">
+                <h3 class="category-name">{{ category.name }}</h3>
+                <div class="menu-items-list">
+                  <div
+                    *ngFor="let item of category.items"
+                    class="menu-item"
+                    [class.unavailable]="!item.available"
+                  >
+                    <div class="item-left">
+                      <div class="item-header">
+                        <span class="item-name">{{ item.name }}</span>
+                        <span *ngIf="!item.available" class="unavail-tag">Indisponible</span>
+                      </div>
+                      <p *ngIf="item.description" class="item-desc">{{ item.description }}</p>
                     </div>
-                    <button
-                      *ngIf="auth.isAuthenticated() && !auth.isManager()"
-                      mat-raised-button
-                      color="accent"
-                      (click)="addToCart(item)"
-                      [disabled]="!item.available"
-                      class="order-button"
-                    >
-                      Ajouter
-                    </button>
+                    <div class="item-right">
+                      <span class="item-price">{{ item.price | currency:'EUR':'symbol':'1.2-2' }}</span>
+                      <button
+                        *ngIf="auth.isAuthenticated() && !auth.isManager()"
+                        class="add-btn"
+                        [class.in-cart]="cartQty(item.id) > 0"
+                        (click)="addToCart(item)"
+                        [disabled]="!item.available"
+                        type="button"
+                      >
+                        <mat-icon>{{ cartQty(item.id) > 0 ? 'add' : 'add' }}</mat-icon>
+                        <span *ngIf="cartQty(item.id) > 0" class="cart-qty-badge">{{ cartQty(item.id) }}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </mat-expansion-panel>
-            </mat-accordion>
+              </div>
+            </div>
           </div>
 
-          <!-- Order cart panel -->
-          <div class="order-panel" *ngIf="auth.isAuthenticated() && !auth.isManager()">
-            <mat-card class="cart-card">
-              <mat-card-header>
-                <mat-card-title>Votre commande</mat-card-title>
-              </mat-card-header>
+          <!-- ── Cart panel ── -->
+          <aside class="cart-panel" *ngIf="auth.isAuthenticated() && !auth.isManager()">
+            <div class="cart-card">
+              <div class="cart-header">
+                <mat-icon>shopping_bag</mat-icon>
+                <span class="cart-title">Votre commande</span>
+                <span *ngIf="cartItems().length > 0" class="cart-count">{{ cartItems().length }}</span>
+              </div>
 
-              <mat-card-content *ngIf="cartItems().length > 0; else emptyCart">
-                <div class="cart-items">
-                  <div *ngFor="let item of cartItems()" class="cart-item">
-                    <div class="item-name">{{ item.name }}</div>
-                    <div class="item-controls">
-                      <button mat-icon-button (click)="decrementQuantity(item.menuItemId)" class="control-btn">
+              <!-- Empty cart -->
+              <div *ngIf="cartItems().length === 0" class="cart-empty">
+                <div class="cart-empty-icon"><mat-icon>shopping_cart</mat-icon></div>
+                <p>Votre panier est vide</p>
+                <span>Ajoutez des articles depuis le menu</span>
+              </div>
+
+              <!-- Cart items -->
+              <div *ngIf="cartItems().length > 0" class="cart-body">
+                <div class="cart-items-list">
+                  <div *ngFor="let item of cartItems()" class="ci">
+                    <span class="ci-name">{{ item.name }}</span>
+                    <div class="ci-controls">
+                      <button class="ci-btn" (click)="decrementQuantity(item.menuItemId)" type="button">
                         <mat-icon>remove</mat-icon>
                       </button>
-                      <span class="quantity">{{ item.quantity }}</span>
-                      <button mat-icon-button (click)="incrementQuantity(item.menuItemId)" class="control-btn">
+                      <span class="ci-qty">{{ item.quantity }}</span>
+                      <button class="ci-btn" (click)="incrementQuantity(item.menuItemId)" type="button">
                         <mat-icon>add</mat-icon>
                       </button>
                     </div>
-                    <div class="item-price">{{ item.unitPrice * item.quantity | currency }}</div>
-                    <button mat-icon-button (click)="removeFromCart(item.menuItemId)" class="delete-btn">
-                      <mat-icon>delete</mat-icon>
+                    <span class="ci-price">{{ item.unitPrice * item.quantity | currency:'EUR':'symbol':'1.2-2' }}</span>
+                    <button class="ci-del" (click)="removeFromCart(item.menuItemId)" type="button">
+                      <mat-icon>close</mat-icon>
                     </button>
                   </div>
                 </div>
 
-                <mat-divider style="margin: 16px 0;"></mat-divider>
-
-                <mat-form-field appearance="outline" class="full-width">
+                <!-- Note -->
+                <mat-form-field appearance="outline" class="note-field">
                   <mat-label>Note spéciale</mat-label>
-                  <textarea matInput [(ngModel)]="orderNote" placeholder="Allergies, préférences..." rows="3"></textarea>
+                  <textarea matInput [ngModel]="orderNote()" (ngModelChange)="orderNote.set($event)" placeholder="Allergies, préférences…" rows="2"></textarea>
+                  <mat-icon matPrefix>edit_note</mat-icon>
                 </mat-form-field>
 
-                <div class="cart-summary">
-                  <div class="summary-row">
-                    <span class="summary-label">Sous-total:</span>
-                    <span class="summary-value">{{ subtotal() | currency }}</span>
-                  </div>
-                  <div class="summary-row total">
-                    <span class="summary-label">Total:</span>
-                    <span class="summary-value">{{ subtotal() | currency }}</span>
-                  </div>
+                <!-- Total row -->
+                <div class="total-row">
+                  <span class="total-label">Total</span>
+                  <span class="total-value">{{ subtotal() | currency:'EUR':'symbol':'1.2-2' }}</span>
                 </div>
 
+                <!-- Submit -->
                 <button
-                  mat-raised-button
-                  color="primary"
+                  class="order-btn"
                   (click)="submitOrder()"
-                  class="full-width"
                   [disabled]="submitting()"
+                  type="button"
                 >
-                  <mat-spinner *ngIf="submitting()" diameter="20" class="spinner"></mat-spinner>
-                  <span *ngIf="!submitting()">Passer la commande</span>
+                  <mat-spinner *ngIf="submitting()" diameter="18"></mat-spinner>
+                  <ng-container *ngIf="!submitting()">
+                    <mat-icon>bolt</mat-icon>
+                    Commander · {{ subtotal() | currency:'EUR':'symbol':'1.2-2' }}
+                  </ng-container>
                 </button>
-              </mat-card-content>
+              </div>
+            </div>
+          </aside>
 
-              <ng-template #emptyCart>
-                <mat-card-content>
-                  <div class="empty-cart">
-                    <mat-icon>shopping_cart</mat-icon>
-                    <p>Aucun article dans votre panier</p>
-                  </div>
-                </mat-card-content>
-              </ng-template>
-            </mat-card>
-          </div>
         </div>
       </ng-container>
+
     </div>
   `,
   styles: [`
-    .profile-container {
-      padding: 0;
-      background: var(--bg-primary, #0a0a0f);
+    /* ─── Base ─── */
+    :host { display: block; background: #080810; }
+
+    .profile-page {
       min-height: 100vh;
+      background: #080810;
+      animation: pageIn 350ms ease both;
     }
 
-    .back-button {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      z-index: 10;
-      background: var(--bg-card, #16161f);
-      box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.4));
+    @keyframes pageIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
-    .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 300px;
+    /* ─── Skeleton loading ─── */
+    @keyframes shimmer {
+      0%   { background-position: -600px 0; }
+      100% { background-position:  600px 0; }
     }
 
-    .hero-section {
-      position: relative;
-      height: 300px;
-      overflow: hidden;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .skeleton {
+      background: linear-gradient(90deg, #1a1a28 25%, #24243a 50%, #1a1a28 75%);
+      background-size: 600px 100%;
+      animation: shimmer 1.6s infinite linear;
     }
 
-    .hero-image {
-      position: absolute;
-      top: 0;
-      left: 0;
+    .hero-skeleton {
+      height: 340px;
       width: 100%;
-      height: 100%;
+    }
+
+    .info-skeleton {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 700px;
+    }
+
+    .sk-line {
+      border-radius: 6px;
+      &.sk-title  { height: 28px; width: 40%; }
+      &.sk-sub    { height: 14px; width: 70%; }
+      &.sk-sub2   { height: 14px; width: 50%; }
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      position: relative;
+      height: 340px;
+      overflow: hidden;
+      background: #16161f;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
 
       img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transform: scale(1.02);
+        transition: transform 6s ease;
       }
     }
 
-    .hero-overlay {
+    .hero-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(249,115,22,0.12) 0%, transparent 70%),
+                  linear-gradient(180deg, #12121e 0%, #0e0e18 100%);
+    }
+
+    .hero-emoji { font-size: 80px; line-height: 1; opacity: 0.5; }
+
+    .hero-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(8,8,16,0.15) 0%,
+        rgba(8,8,16,0.4) 40%,
+        rgba(8,8,16,0.85) 100%
+      );
+      pointer-events: none;
+    }
+
+    /* Back pill */
+    .back-pill {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px 7px 10px;
+      border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(8,8,16,0.65);
+      backdrop-filter: blur(10px);
+      color: #ececf0;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 150ms, border-color 150ms;
+
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+      &:hover { background: rgba(8,8,16,0.85); border-color: rgba(255,255,255,0.25); }
+    }
+
+    /* Hero content */
+    .hero-content {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
-      color: white;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      padding: 24px 28px;
+    }
 
-      h1 {
-        margin: 0;
-        font-size: 32px;
-        font-weight: 600;
+    .hero-badges-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .hbadge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      backdrop-filter: blur(8px);
+
+      &.cuisine {
+        background: rgba(245,158,11,0.18);
+        border: 1px solid rgba(245,158,11,0.35);
+        color: #fbbf24;
+      }
+
+      &.status {
+        background: rgba(14,14,24,0.7);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: #9ca3af;
+
+        .dot {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: #4b5563;
+          flex-shrink: 0;
+        }
+
+        &.open {
+          color: #4ade80;
+          border-color: rgba(34,197,94,0.35);
+          .dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+        }
       }
     }
 
-    .hero-badges {
+    .hero-title {
+      margin: 0 0 10px;
+      font-size: clamp(24px, 4vw, 38px);
+      font-weight: 800;
+      color: #ececf0;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+
+    .hero-meta {
       display: flex;
-      gap: 12px;
+      gap: 16px;
       flex-wrap: wrap;
     }
 
-    .cuisine-badge {
-      background: var(--warning, #f59e0b);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .status-badge {
-      background: var(--bg-secondary, #111118);
-      padding: 6px 12px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
+    .hero-rating, .hero-addr {
       display: flex;
       align-items: center;
-      gap: 6px;
-
-      &.open {
-        color: var(--success, #22c55e);
-      }
-
-      &.closed {
-        color: var(--danger, #ef4444);
-      }
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(236,236,240,0.7);
+      mat-icon { font-size: 15px; width: 15px; height: 15px; }
     }
 
-    .truck-info-section {
-      padding: 24px;
-      background: var(--bg-secondary, #111118);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 24px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    .hero-rating { color: #fbbf24; mat-icon { color: #fbbf24; } }
+
+    /* ─── Info bar ─── */
+    .info-bar {
+      background: #0c0c16;
+      border-bottom: 1px solid #1a1a28;
+      padding: 16px 28px;
     }
 
-    .truck-details {
-      flex: 1;
-
-      .description {
-        margin: 0 0 12px 0;
-        color: var(--text-secondary, #8b8ba0);
-        line-height: 1.6;
-        font-size: 15px;
-      }
-
-      .address {
-        margin: 0 0 12px 0;
-        color: var(--text-secondary, #8b8ba0);
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-
-        mat-icon {
-          font-size: 18px;
-          width: 18px;
-          height: 18px;
-          color: var(--warning, #f59e0b);
-        }
-      }
-
-      .rating {
-        margin: 0;
-        color: var(--warning, #f59e0b);
-        font-weight: 600;
-        font-size: 14px;
-
-        .stars {
-          margin-right: 6px;
-        }
-      }
-    }
-
-    .follow-button {
-      flex-shrink: 0;
-    }
-
-    .content-layout {
-      display: grid;
-      grid-template-columns: 1fr 350px;
-      gap: 24px;
-      padding: 24px;
-      max-width: 1200px;
+    .info-bar-inner {
+      max-width: 1160px;
       margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
     }
 
-    .menu-section {
-      h2 {
-        margin: 0 0 16px 0;
-        color: var(--text-primary, #ececf0);
-        font-size: 20px;
+    .truck-desc {
+      margin: 0;
+      font-size: 14px;
+      color: #8b8ba0;
+      line-height: 1.6;
+      flex: 1;
+      max-width: 680px;
+    }
+
+    .follow-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(249,115,22,0.35);
+      background: rgba(249,115,22,0.08);
+      color: #fb923c;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 150ms;
+
+      mat-icon { font-size: 17px; width: 17px; height: 17px; }
+
+      &:hover {
+        background: rgba(249,115,22,0.15);
+        border-color: rgba(249,115,22,0.55);
+      }
+
+      &.following {
+        border-color: rgba(239,68,68,0.3);
+        background: rgba(239,68,68,0.08);
+        color: #f87171;
+        &:hover { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.5); }
       }
     }
 
-    .menu-items {
-      padding: 16px 0;
+    /* ─── Body layout ─── */
+    .body-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 28px;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 28px 20px 80px;
+      align-items: start;
+    }
+
+    /* ─── Menu panel ─── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #1a1a28;
+
+      mat-icon { font-size: 20px; width: 20px; height: 20px; color: #fb923c; }
+
+      h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #ececf0;
+      }
+    }
+
+    .menu-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 48px 24px;
+      color: #5c5c70;
+      font-size: 14px;
+    }
+
+    .menu-empty-icon {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      background: rgba(249,115,22,0.07);
+      border: 1px solid rgba(249,115,22,0.12);
+      display: flex; align-items: center; justify-content: center;
+      mat-icon { font-size: 26px; width: 26px; height: 26px; color: #fb923c; }
+    }
+
+    .menu-category {
+      margin-bottom: 28px;
+      &:not(.first) { padding-top: 4px; }
+    }
+
+    .category-name {
+      margin: 0 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #5c5c70;
+    }
+
+    .menu-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .menu-item {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      background: #111118;
+      border: 1px solid #1e1e2e;
+      border-radius: 12px;
+      transition: border-color 180ms, box-shadow 180ms;
+
+      &:hover:not(.unavailable) {
+        border-color: rgba(249,115,22,0.25);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      }
+
+      &.unavailable { opacity: 0.5; }
+    }
+
+    .item-left { flex: 1; min-width: 0; }
+
+    .item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .item-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #ececf0;
+    }
+
+    .unavail-tag {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.2);
+      color: #f87171;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .item-desc {
+      margin: 0;
+      font-size: 12px;
+      color: #5c5c70;
+      line-height: 1.5;
+    }
+
+    .item-right {
+      display: flex;
+      align-items: center;
       gap: 12px;
-      padding: 16px;
-      background: var(--bg-card, #16161f);
-      border-radius: 8px;
-      margin-bottom: 12px;
-      border: 1px solid var(--border, #27273a);
-      transition: all 0.2s ease;
-
-      &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      &.unavailable {
-        opacity: 0.6;
-      }
-    }
-
-    .item-info {
-      flex: 1;
-
-      h4 {
-        margin: 0 0 6px 0;
-        color: var(--text-primary, #ececf0);
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .unavailable-badge {
-          background: rgba(239, 68, 68, 0.18);
-          color: var(--danger, #ef4444);
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-size: 11px;
-          font-weight: 600;
-          margin-left: auto;
-        }
-      }
-
-      .item-description {
-        margin: 0 0 8px 0;
-        color: var(--text-secondary, #8b8ba0);
-        font-size: 13px;
-        line-height: 1.4;
-      }
-
-      .price {
-        font-weight: 600;
-        color: var(--warning, #f59e0b);
-        font-size: 15px;
-      }
-    }
-
-    .order-button {
       flex-shrink: 0;
     }
 
-    .order-panel {
+    .item-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f97316;
+      white-space: nowrap;
+    }
+
+    .add-btn {
+      position: relative;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      border: 1px solid rgba(249,115,22,0.35);
+      background: rgba(249,115,22,0.1);
+      color: #fb923c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 150ms;
+      flex-shrink: 0;
+
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+      &:hover:not(:disabled) {
+        background: rgba(249,115,22,0.2);
+        border-color: rgba(249,115,22,0.6);
+        transform: scale(1.08);
+      }
+
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      &.in-cart {
+        background: rgba(249,115,22,0.18);
+        border-color: rgba(249,115,22,0.5);
+      }
+    }
+
+    .cart-qty-badge {
+      position: absolute;
+      top: -6px; right: -6px;
+      width: 16px; height: 16px;
+      background: #f97316;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── Cart panel ─── */
+    .cart-panel {
       position: sticky;
-      top: 24px;
+      top: 72px;
       height: fit-content;
     }
 
     .cart-card {
-      border: 2px solid var(--warning, #f59e0b);
-      background: var(--bg-card, #16161f) !important;
+      background: #0f0f1a;
+      border: 1px solid #1e1e2e;
+      border-radius: 16px;
+      overflow: hidden;
     }
 
-    mat-card-header {
-      padding: 16px;
+    .cart-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #1a1a28;
+
+      mat-icon { font-size: 20px; width: 20px; height: 20px; color: #fb923c; }
     }
 
-    mat-card-content {
-      padding: 16px;
+    .cart-title {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 700;
+      color: #ececf0;
     }
 
-    .cart-items {
+    .cart-count {
+      background: #f97316;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cart-empty {
+      padding: 36px 24px;
+      text-align: center;
+      color: #5c5c70;
+
+      p { margin: 10px 0 4px; font-size: 14px; font-weight: 600; color: #8b8ba0; }
+      span { font-size: 12px; }
+    }
+
+    .cart-empty-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid #1e1e2e;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 4px;
+      mat-icon { font-size: 24px; width: 24px; height: 24px; }
+    }
+
+    .cart-body {
+      padding: 16px 20px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 300px;
-      overflow-y: auto;
     }
 
-    .cart-item {
+    .cart-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+
+      &::-webkit-scrollbar { width: 4px; }
+      &::-webkit-scrollbar-thumb { background: #2a2a3c; border-radius: 2px; }
+    }
+
+    .ci {
       display: grid;
       grid-template-columns: 1fr auto auto auto;
       align-items: center;
       gap: 8px;
-      padding: 8px;
-      background: var(--bg-secondary, #111118);
-      border-radius: 4px;
-      border: 1px solid var(--border, #27273a);
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #1e1e2e;
+      border-radius: 8px;
       font-size: 13px;
-
-      .item-name {
-        font-weight: 500;
-        color: var(--text-primary, #ececf0);
-        word-break: break-word;
-      }
-
-      .item-controls {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        border: 1px solid var(--border, #27273a);
-        border-radius: 4px;
-        background: var(--bg-input, #1a1a25);
-
-        .control-btn {
-          width: 28px;
-          height: 28px;
-          min-width: 28px;
-
-          mat-icon {
-            font-size: 16px;
-            width: 16px;
-            height: 16px;
-          }
-        }
-
-        .quantity {
-          padding: 0 8px;
-          font-weight: 600;
-          color: var(--text-primary, #ececf0);
-          min-width: 28px;
-          text-align: center;
-        }
-      }
-
-      .item-price {
-        font-weight: 600;
-        color: var(--warning, #f59e0b);
-        text-align: right;
-        min-width: 60px;
-      }
-
-      .delete-btn {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
-        color: var(--danger, #ef4444);
-
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
-      }
     }
 
-    .empty-cart {
-      text-align: center;
-      padding: 24px;
-      color: var(--text-muted, #5c5c70);
-
-      mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        color: var(--border, #27273a);
-        margin-bottom: 12px;
-      }
-
-      p {
-        margin: 0;
-        font-size: 14px;
-      }
+    .ci-name {
+      font-weight: 500;
+      color: #d4d4e0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .full-width {
-      width: 100%;
-      margin: 16px 0;
-    }
-
-    .cart-summary {
-      background: var(--bg-secondary, #111118);
-      padding: 12px;
-      border-radius: 4px;
-      margin: 16px 0;
-    }
-
-    .summary-row {
+    .ci-controls {
       display: flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid #27273a;
+      border-radius: 6px;
+    }
+
+    .ci-btn {
+      width: 26px; height: 26px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8b8ba0;
+      border-radius: 5px;
+      transition: background 150ms, color 150ms;
+
+      mat-icon { font-size: 15px; width: 15px; height: 15px; }
+      &:hover { background: rgba(249,115,22,0.12); color: #fb923c; }
+    }
+
+    .ci-qty {
+      padding: 0 6px;
+      font-weight: 700;
+      font-size: 13px;
+      color: #ececf0;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .ci-price {
+      font-weight: 700;
+      font-size: 13px;
+      color: #f97316;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    .ci-del {
+      width: 26px; height: 26px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #3d3d55;
+      border-radius: 5px;
+      transition: background 150ms, color 150ms;
+
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
+      &:hover { background: rgba(239,68,68,0.1); color: #f87171; }
+    }
+
+    .note-field {
+      width: 100%;
+    }
+
+    .total-row {
+      display: flex;
+      align-items: center;
       justify-content: space-between;
+      padding: 12px 0;
+      border-top: 1px solid #1a1a28;
+    }
+
+    .total-label {
       font-size: 14px;
-      margin: 6px 0;
-
-      &.total {
-        font-weight: 600;
-        color: var(--warning, #f59e0b);
-        font-size: 16px;
-        margin-top: 12px;
-      }
-
-      .summary-label {
-        color: var(--text-secondary, #8b8ba0);
-      }
-
-      .summary-value {
-        color: var(--text-primary, #ececf0);
-        font-weight: 500;
-      }
+      font-weight: 600;
+      color: #8b8ba0;
     }
 
-    button {
-      margin-top: 12px;
-
-      .spinner {
-        display: inline-block;
-        margin-right: 8px;
-      }
+    .total-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ececf0;
     }
 
-    @media (max-width: 900px) {
-      .content-layout {
+    .order-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #f97316 0%, #ea5f14 100%);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: opacity 150ms, transform 150ms;
+      box-shadow: 0 4px 20px rgba(249,115,22,0.3);
+
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+      &:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+      &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 960px) {
+      .body-layout {
         grid-template-columns: 1fr;
+        gap: 20px;
       }
 
-      .order-panel {
+      .cart-panel {
         position: static;
+        order: -1;
       }
     }
 
-    @media (max-width: 600px) {
-      .hero-overlay {
-        padding: 16px;
+    @media (max-width: 640px) {
+      .hero { height: 260px; }
 
-        h1 {
-          font-size: 24px;
-        }
-      }
+      .hero-content { padding: 16px 20px; }
 
-      .truck-info-section {
-        flex-direction: column;
-      }
+      .info-bar { padding: 12px 20px; }
+      .info-bar-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .follow-btn { width: 100%; justify-content: center; }
 
-      .menu-item {
-        flex-direction: column;
-
-        .item-info h4 .unavailable-badge {
-          margin-left: 0;
-          margin-top: 4px;
-        }
-      }
-
-      .order-button {
-        width: 100%;
-      }
+      .body-layout { padding: 16px 12px 80px; gap: 16px; }
     }
   `],
 })
@@ -647,6 +925,11 @@ export class TruckProfileComponent {
   readonly subtotal = computed(() => {
     return this.cartItems().reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   });
+
+  /** Returns how many of a given menu item are currently in the cart */
+  cartQty(menuItemId: string): number {
+    return this.cart().get(menuItemId)?.quantity ?? 0;
+  }
 
   constructor() {
     effect(() => {

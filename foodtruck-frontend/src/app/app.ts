@@ -209,12 +209,14 @@ import { NotificationService } from './core/services/notification.service';
       display: flex;
       align-items: center;
       gap: 4px;
-      padding: 0 16px;
-      background: #111118;
-      border-bottom: 1px solid #27273a;
+      padding: 0 20px;
+      background: rgba(11,11,18,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
     }
 
-    .admin-bar { border-bottom-color: rgba(249,115,22,0.25); }
+    .admin-bar { border-bottom-color: rgba(249,115,22,0.2); }
 
     /* Hamburger — mobile only */
     .hamburger {
@@ -438,15 +440,17 @@ import { NotificationService } from './core/services/notification.service';
        BOTTOM NAV
     ════════════════════════════════════════ */
     .bottom-nav {
-      display: none; /* shown only on mobile via media query */
+      display: none;
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
       z-index: 150;
       height: 64px;
-      background: #111118;
-      border-top: 1px solid #27273a;
+      background: rgba(11,11,18,0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.05);
       align-items: stretch;
       justify-content: space-around;
     }
@@ -456,26 +460,38 @@ import { NotificationService } from './core/services/notification.service';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 3px;
       flex: 1;
-      color: rgba(236,236,240,0.45);
+      color: rgba(236,236,240,0.38);
       text-decoration: none;
       font-size: 10px;
       font-weight: 500;
       background: none;
       border: none;
       cursor: pointer;
-      transition: all 150ms ease;
-      padding: 8px 4px;
+      transition: color 150ms ease;
+      padding: 6px 4px;
+      position: relative;
 
-      mat-icon { font-size: 22px; width: 22px; height: 22px; }
+      mat-icon { font-size: 22px; width: 22px; height: 22px; transition: transform 150ms ease; }
 
       &.bottom-active {
         color: #fb923c;
+        mat-icon { transform: translateY(-1px); }
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: 6px;
+          width: 20px;
+          height: 3px;
+          background: #fb923c;
+          border-radius: 2px;
+          box-shadow: 0 0 8px rgba(249,115,22,0.6);
+        }
       }
 
       &:not(.bottom-active):hover {
-        color: rgba(236,236,240,0.75);
+        color: rgba(236,236,240,0.65);
       }
     }
 
@@ -484,7 +500,7 @@ import { NotificationService } from './core/services/notification.service';
       height: 22px;
       border-radius: 50%;
       background: rgba(249,115,22,0.15);
-      border: 1.5px solid rgba(249,115,22,0.3);
+      border: 1.5px solid rgba(249,115,22,0.35);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -492,6 +508,7 @@ import { NotificationService } from './core/services/notification.service';
       font-weight: 700;
       color: #fb923c;
       line-height: 1;
+      font-family: 'Inter', sans-serif;
     }
 
     /* ════════════════════════════════════════

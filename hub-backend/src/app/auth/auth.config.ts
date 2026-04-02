@@ -24,7 +24,7 @@ export const loadAuthConfig = (): AuthConfig => {
     privateKeyPath: required('AUTH_PRIVATE_KEY_PATH', 'hub-backend/keys/private.pem'),
     publicKeyPath: required('AUTH_PUBLIC_KEY_PATH', 'hub-backend/keys/public.pem'),
     redisUrl: process.env.REDIS_URL,
-    corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:4200,http://localhost:4300')
+    corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:4200,http://localhost:4300,https://mft.up.railway.app')
       .split(',')
       .map((v) => v.trim())
       .filter(Boolean),
