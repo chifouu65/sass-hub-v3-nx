@@ -3,7 +3,7 @@ import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
 /** Hub frontend URL — manager login lives here */
-const HUB_URL = 'https://sass-hub-v3-nx-production-f0c6.up.railway.app';
+const HUB_URL = 'https://sass-hub.up.railway.app';
 
 @Component({
   selector: 'app-welcome',
