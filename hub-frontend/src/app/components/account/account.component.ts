@@ -17,10 +17,6 @@ import { AuthService } from '../../services/auth.service';
 export class AccountComponent {
   auth = inject(AuthService);
 
-  async refresh() {
-    await this.auth.restoreSession();
-  }
-
   async logout() {
     await this.auth.logout();
   }

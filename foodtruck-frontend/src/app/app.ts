@@ -98,7 +98,10 @@ import { NotificationService } from './core/services/notification.service';
       <mat-menu #accountMenu="matMenu">
         <div *ngIf="auth.isAuthenticated()" class="menu-user-info" mat-menu-item disabled>
           <mat-icon>person</mat-icon>
-          <span>{{ auth.user()?.['email'] }}</span>
+          <div class="user-info-text">
+            <div class="user-name">{{ displayName() }}</div>
+            <div class="user-email">{{ auth.user()?.['email'] }}</div>
+          </div>
         </div>
         <div *ngIf="auth.isManager()" class="menu-role-badge" mat-menu-item disabled>
           <mat-icon>verified</mat-icon><span>Gérant</span>
@@ -186,7 +189,10 @@ import { NotificationService } from './core/services/notification.service';
     <mat-menu #accountMenu2="matMenu">
       <div class="menu-user-info" mat-menu-item disabled>
         <mat-icon>person</mat-icon>
-        <span>{{ auth.user()?.['email'] }}</span>
+        <div class="user-info-text">
+          <div class="user-name">{{ displayName() }}</div>
+          <div class="user-email">{{ auth.user()?.['email'] }}</div>
+        </div>
       </div>
       <mat-divider></mat-divider>
       <button mat-menu-item *ngIf="auth.isManager()" routerLink="/manager/dashboard">
@@ -342,9 +348,17 @@ import { NotificationService } from './core/services/notification.service';
 
     /* Menu items */
     .menu-user-info {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; color: #8b8ba0;
+      display: flex; align-items: center; gap: 10px;
       pointer-events: none; opacity: 1 !important;
+    }
+    .user-info-text {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .user-name {
+      font-size: 13px; font-weight: 600; color: #ececf0;
+    }
+    .user-email {
+      font-size: 11px; color: #8b8ba0;
     }
     .menu-role-badge {
       display: flex; align-items: center; gap: 6px;
@@ -552,6 +566,12 @@ export class App {
   readonly userInitial = computed(() => {
     const email = this.auth.user()?.['email'] as string | undefined;
     return email ? email[0].toUpperCase() : '?';
+  });
+
+  readonly displayName = computed(() => {
+    const email = this.auth.user()?.['email'] as string | undefined;
+    if (!email) return 'utilisateur';
+    return email.split('@')[0];
   });
 
   async logout(): Promise<void> {

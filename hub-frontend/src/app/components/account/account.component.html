@@ -12,8 +12,8 @@
             <mat-icon>person</mat-icon>
           </div>
           <div class="profile-info">
-            <h3>{{ auth.user()?.['email'] ?? 'Utilisateur' }}</h3>
-            <span class="profile-id">ID : {{ auth.user()?.['sub'] ?? '—' }}</span>
+            <h3>{{ (auth.user()?.['email']?.toString() ?? 'utilisateur').split('@')[0] }}</h3>
+            <span class="profile-email">{{ auth.user()?.['email'] ?? '—' }}</span>
           </div>
         </div>
 
@@ -21,26 +21,18 @@
 
         <div class="profile-details">
           <div class="detail-row">
-            <span class="detail-label">Email</span>
+            <span class="detail-label">Adresse email</span>
             <span class="detail-value">{{ auth.user()?.['email'] ?? '—' }}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label">Émetteur JWT</span>
-            <span class="detail-value">{{ auth.user()?.['iss'] ?? '—' }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Expiration</span>
-            <span class="detail-value">{{ auth.user()?.['exp'] ?? '—' }}</span>
+            <span class="detail-label">Abonnement</span>
+            <span class="detail-value">Plan Pro</span>
           </div>
         </div>
 
         <mat-divider></mat-divider>
 
         <div class="profile-actions">
-          <button mat-stroked-button (click)="refresh()">
-            <mat-icon>refresh</mat-icon>
-            Rafraîchir le token
-          </button>
           <button mat-stroked-button class="logout-btn" (click)="logout()">
             <mat-icon>logout</mat-icon>
             Se déconnecter
@@ -48,11 +40,6 @@
         </div>
       </mat-card-content>
     </mat-card>
-
-    <details class="raw-token">
-      <summary>Payload JWT brut</summary>
-      <pre>{{ auth.user() | json }}</pre>
-    </details>
   } @else {
     <mat-card class="not-logged-card" appearance="outlined">
       <mat-card-content>

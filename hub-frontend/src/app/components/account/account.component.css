@@ -55,12 +55,12 @@
 .profile-info h3 {
   font-size: 1.1rem;
   font-weight: 600;
+  margin: 0 0 4px 0;
 }
 
-.profile-id {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-family: monospace;
+.profile-email {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .profile-details {
@@ -101,27 +101,6 @@
 .logout-btn {
   color: var(--danger) !important;
   border-color: var(--danger-muted) !important;
-}
-
-.raw-token {
-  margin-top: 16px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.raw-token summary {
-  cursor: pointer;
-  padding: 8px 0;
-}
-
-.raw-token pre {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  overflow-x: auto;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
 }
 
 .not-logged-card {

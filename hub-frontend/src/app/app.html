@@ -24,6 +24,7 @@
       <div class="menu-user-info">
         <div class="menu-avatar">{{ userInitials }}</div>
         <div>
+          <div class="menu-name">{{ displayName }}</div>
           <div class="menu-email">{{ auth.user()?.['email'] ?? 'Utilisateur' }}</div>
           <div class="menu-role">Plan Pro</div>
         </div>
@@ -64,6 +65,7 @@
       <div class="sidenav-user">
         <div class="sidenav-avatar">{{ userInitials }}</div>
         <div class="sidenav-user-info">
+          <div class="sidenav-user-name">{{ displayName }}</div>
           <div class="sidenav-user-email">{{ auth.user()?.['email'] ?? '' }}</div>
           <div class="sidenav-user-plan">
             <mat-icon class="plan-icon">workspace_premium</mat-icon>

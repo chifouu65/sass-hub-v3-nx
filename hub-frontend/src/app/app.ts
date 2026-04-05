@@ -78,4 +78,11 @@ export class App implements OnInit {
     if (!email) return '?';
     return email.charAt(0).toUpperCase();
   }
+
+  /** Nom d'affichage : partie avant le @ */
+  get displayName(): string {
+    const email = this.auth.user()?.['email'] as string | undefined;
+    if (!email) return 'utilisateur';
+    return email.split('@')[0];
+  }
 }
