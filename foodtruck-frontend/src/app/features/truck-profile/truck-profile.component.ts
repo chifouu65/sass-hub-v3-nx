@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, computed } from '@angular/core';
+import { Component, inject, signal, effect, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +18,7 @@ import { MenuService, MenuItem } from '../../core/services/menu.service';
 import { FollowerService } from '../../core/services/follower.service';
 import { OrderService } from '../../core/services/order.service';
 import { AuthService } from '../../core/services/auth.service';
+import { MapService } from '../../core/services/map.service';
 
 interface CartItem {
   menuItemId: string;
@@ -114,6 +115,16 @@ interface CartItem {
               {{ isFollowing() ? 'Ne plus suivre' : 'Suivre' }}
             </button>
           </div>
+        </div>
+
+        <!-- Carte de localisation -->
+        <div *ngIf="truck()!.latitude && truck()!.longitude" class="location-section">
+          <div class="section-head-inline">
+            <mat-icon>location_on</mat-icon>
+            <span>Où nous trouver</span>
+            <span *ngIf="truck()!.address" class="addr-text">— {{ truck()!.address }}</span>
+          </div>
+          <div id="truck-profile-map" class="profile-map-el"></div>
         </div>
 
         <!-- Body layout -->
@@ -876,6 +887,35 @@ interface CartItem {
       &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     }
 
+    /* ─── Location map ─── */
+    .location-section {
+      padding: 0 24px 24px;
+    }
+
+    .section-head-inline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #9090a8;
+      margin-bottom: 10px;
+      mat-icon { font-size: 16px; width: 16px; height: 16px; color: #6366f1; }
+    }
+
+    .addr-text {
+      font-weight: 400;
+      color: #6a6a80;
+    }
+
+    .profile-map-el {
+      width: 100%;
+      height: 220px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
     /* ─── Responsive ─── */
     @media (max-width: 960px) {
       .body-layout {
@@ -902,7 +942,7 @@ interface CartItem {
     }
   `],
 })
-export class TruckProfileComponent {
+export class TruckProfileComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly truckService = inject(TruckService);
@@ -911,6 +951,7 @@ export class TruckProfileComponent {
   private readonly orderService = inject(OrderService);
   protected readonly auth = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly mapService = inject(MapService);
 
   readonly truckId = signal<string | null>(null);
   readonly truck = signal<any>(null);
@@ -943,6 +984,33 @@ export class TruckProfileComponent {
         }
       }
     });
+
+    // Initialise la carte dès que le truck (avec coordonnées) est chargé
+    effect(() => {
+      const t = this.truck();
+      if (t?.latitude && t?.longitude) {
+        // setTimeout pour laisser le DOM rendre le div de la carte
+        setTimeout(() => {
+          const map = this.mapService.initMap(
+            'truck-profile-map',
+            [t.latitude as number, t.longitude as number],
+            15,
+          );
+          this.mapService.createTruckMarker(map, {
+            id: t.id,
+            lat: t.latitude as number,
+            lng: t.longitude as number,
+            label: t.name,
+            isOpen: t.isOpen,
+            popup: `<strong>${t.name}</strong>${t.address ? `<br/>${t.address}` : ''}`,
+          });
+        }, 100);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.mapService.destroyMap('truck-profile-map');
   }
 
   private async loadTruck(id: string): Promise<void> {
