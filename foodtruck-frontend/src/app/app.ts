@@ -110,6 +110,9 @@ import { NotificationService } from './core/services/notification.service';
         <button mat-menu-item *ngIf="auth.isManager()" routerLink="/manager/dashboard">
           <mat-icon>dashboard</mat-icon> Mon panel
         </button>
+        <button mat-menu-item *ngIf="auth.isAuthenticated()" routerLink="/my/profile">
+          <mat-icon>manage_accounts</mat-icon> Mon profil
+        </button>
         <button mat-menu-item *ngIf="auth.isAuthenticated()" (click)="logout()">
           <mat-icon>logout</mat-icon> Déconnexion
         </button>
@@ -144,6 +147,10 @@ import { NotificationService } from './core/services/notification.service';
           <a *ngIf="auth.isManager()" routerLink="/manager/dashboard" class="drawer-link"
              (click)="mobileMenuOpen.set(false)">
             <mat-icon>admin_panel_settings</mat-icon><span>Panel gérant</span>
+          </a>
+          <a routerLink="/my/profile" class="drawer-link" routerLinkActive="drawer-active"
+             (click)="mobileMenuOpen.set(false)">
+            <mat-icon>manage_accounts</mat-icon><span>Mon profil</span>
           </a>
           <div class="drawer-divider"></div>
           <button class="drawer-link drawer-logout" (click)="logout(); mobileMenuOpen.set(false)">
@@ -197,6 +204,9 @@ import { NotificationService } from './core/services/notification.service';
       <mat-divider></mat-divider>
       <button mat-menu-item *ngIf="auth.isManager()" routerLink="/manager/dashboard">
         <mat-icon>dashboard</mat-icon> Mon panel
+      </button>
+      <button mat-menu-item routerLink="/my/profile">
+        <mat-icon>manage_accounts</mat-icon> Mon profil
       </button>
       <button mat-menu-item (click)="logout()">
         <mat-icon>logout</mat-icon> Déconnexion

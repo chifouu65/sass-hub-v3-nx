@@ -143,6 +143,13 @@ export const appRoutes: Route[] = [
             m => m.OrderDetailComponent
           ),
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/customer/profile/profile.component').then(
+            m => m.ProfileComponent
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: '/discover' },
