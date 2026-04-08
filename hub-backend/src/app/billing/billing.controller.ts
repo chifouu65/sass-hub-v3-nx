@@ -56,7 +56,7 @@ export class BillingController {
     const userId = req.user?.sub ?? '';
     const email = req.user?.['email'] as string ?? '';
     const customerId = await this.stripe.getOrCreateCustomer(userId, email);
-    const origin = 'http://localhost:4200';
+    const origin = process.env['HUB_FRONTEND_URL'] ?? 'http://localhost:4200';
     const url = await this.stripe.createCheckoutSession(
       customerId,
       body.priceId,
@@ -72,9 +72,10 @@ export class BillingController {
     const userId = req.user?.sub ?? '';
     const email = req.user?.['email'] as string ?? '';
     const customerId = await this.stripe.getOrCreateCustomer(userId, email);
+    const origin = process.env['HUB_FRONTEND_URL'] ?? 'http://localhost:4200';
     const url = await this.stripe.createPortalSession(
       customerId,
-      'http://localhost:4200/billing',
+      `${origin}/billing`,
     );
     return { url };
   }

@@ -276,4 +276,13 @@ export class SupabaseService implements OnModuleInit {
       'resolution=merge-duplicates',
     );
   }
+
+  /**
+   * Appelé lors de customer.subscription.deleted Stripe webhook.
+   * Marque l'abonnement Stripe comme révoqué en effaçant le customer_id mappé
+   * afin que les appels suivants à getOrCreateCustomer recréent un client propre.
+   */
+  async revokeSubscriptionByStripeCustomer(stripeCustomerId: string): Promise<void> {
+    await this.del(`stripe_customers?stripe_customer_id=eq.${encodeURIComponent(stripeCustomerId)}`);
+  }
 }

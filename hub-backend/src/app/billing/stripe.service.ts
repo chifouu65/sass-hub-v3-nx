@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { SupabaseService } from '../supabase/supabase.service';
 
 // ── IDs Stripe créés via MCP ─────────────────────────────────────────────────
@@ -219,13 +220,61 @@ export class StripeService {
 
   // ── Webhook ─────────────────────────────────────────────────────────────────
 
-  async handleWebhookEvent(rawBody: Buffer, _signature: string): Promise<void> {
-    let event: any;
-    try {
-      event = JSON.parse(rawBody.toString());
-    } catch {
-      throw new Error('Invalid webhook payload');
+  /**
+   * Vérifie la signature Stripe (HMAC-SHA256) et retourne l'événement parsé.
+   * La clé STRIPE_WEBHOOK_SECRET doit être définie dans les variables d'env.
+   * Tolérance temporelle : 300 secondes (5 min) contre les attaques en rejeu.
+   */
+  private verifyWebhookSignature(rawBody: Buffer, signature: string): any {
+    const secret = process.env['STRIPE_WEBHOOK_SECRET'];
+    if (!secret) {
+      this.logger.warn('STRIPE_WEBHOOK_SECRET non défini — signature non vérifiée en dev');
+      try {
+        return JSON.parse(rawBody.toString());
+      } catch {
+        throw new BadRequestException('Invalid webhook payload');
+      }
     }
+
+    // Format : "t=<timestamp>,v1=<hmac>,v0=<hmac_old>"
+    const parts = Object.fromEntries(
+      signature.split(',').map(p => {
+        const idx = p.indexOf('=');
+        return [p.slice(0, idx), p.slice(idx + 1)];
+      }),
+    );
+    const ts = parts['t'];
+    const v1 = parts['v1'];
+    if (!ts || !v1) throw new BadRequestException('Missing Stripe-Signature fields');
+
+    // Vérification de la fraîcheur (anti-replay)
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (Math.abs(nowSec - Number(ts)) > 300) {
+      throw new BadRequestException('Webhook timestamp too old');
+    }
+
+    // Calcul du HMAC attendu
+    const payload = `${ts}.${rawBody.toString()}`;
+    const expected = createHmac('sha256', secret).update(payload).digest('hex');
+
+    // Comparaison en temps constant pour éviter les timing attacks
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const receivedBuf = Buffer.from(v1, 'hex');
+    const signaturesMatch =
+      expectedBuf.length === receivedBuf.length &&
+      timingSafeEqual(expectedBuf, receivedBuf);
+
+    if (!signaturesMatch) throw new BadRequestException('Invalid Stripe webhook signature');
+
+    try {
+      return JSON.parse(rawBody.toString());
+    } catch {
+      throw new BadRequestException('Invalid webhook payload');
+    }
+  }
+
+  async handleWebhookEvent(rawBody: Buffer, signature: string): Promise<void> {
+    const event: any = this.verifyWebhookSignature(rawBody, signature);
 
     const obj = event.data?.object;
     this.logger.log(`Stripe event: ${event.type}`);
@@ -239,11 +288,15 @@ export class StripeService {
         this.logger.log(`Subscription mis à jour: ${obj?.id} — status: ${obj?.status} — cancel_at_period_end: ${obj?.cancel_at_period_end}`);
         break;
 
-      case 'customer.subscription.deleted':
-        // Le statut passe à 'canceled' — l'accès doit être révoqué
-        this.logger.warn(`Subscription annulé: ${obj?.id} — customer: ${obj?.customer}`);
-        // TODO prod: marquer l'utilisateur comme sans abonnement en base de données
+      case 'customer.subscription.deleted': {
+        // Le statut passe à 'canceled' — on révoque l'accès en base
+        const customerId = obj?.customer as string | undefined;
+        this.logger.warn(`Subscription annulé: ${obj?.id} — customer: ${customerId}`);
+        if (customerId) {
+          await this.supabase.revokeSubscriptionByStripeCustomer(customerId);
+        }
         break;
+      }
 
       case 'invoice.payment_succeeded':
         this.logger.log(`Paiement réussi — invoice: ${obj?.id} — montant: ${obj?.amount_paid} ${obj?.currency}`);
