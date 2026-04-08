@@ -4,7 +4,7 @@
   <div class="welcome">
     <h1>
       @if (auth.isAuthenticated()) {
-        Bonjour, <span class="highlight">{{ (auth.user()?.['email']?.toString() ?? 'utilisateur').split('@')[0] }}</span> 👋
+        Bonjour, <span class="highlight">{{ displayName() }}</span> 👋
       } @else {
         Bienvenue sur SaaS Hub
       }

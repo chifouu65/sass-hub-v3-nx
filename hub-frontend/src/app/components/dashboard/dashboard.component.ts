@@ -1,6 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +28,22 @@ interface AppCard {
   status: 'active' | 'available';
   plan: string;
   url: string;
+}
+
+interface SubscriptionResponse {
+  subscription: {
+    id: string;
+    status: string;
+    planName: string;
+    priceId: string;
+    currentPeriodEnd: number;
+    cancelAtPeriodEnd: boolean;
+  } | null;
+}
+
+interface UserProfile {
+  name: string | null;
+  email: string;
 }
 
 /** Méta-données locales pour enrichir le catalogue backend */
@@ -68,18 +84,56 @@ export class DashboardComponent {
   auth = inject(AuthService);
   private http = inject(HttpClient);
 
-  // ── rxResource : catalogue chargé depuis l'API ──────────────────────────
+  private get authHeaders(): HttpHeaders {
+    const token = this.auth.accessToken();
+    return token
+      ? new HttpHeaders({ authorization: `Bearer ${token}` })
+      : new HttpHeaders();
+  }
+
+  // ── Catalogue d'apps ───────────────────────────────────────────────────────
   readonly catalogResource = rxResource({
     stream: () =>
       this.http.get<AppDescriptor[]>('/api/catalog', {
-        headers: this.auth.accessToken()
-          ? { authorization: `Bearer ${this.auth.accessToken()}` }
-          : {},
+        headers: this.authHeaders,
         withCredentials: true,
       }),
   });
 
-  // Catalogue enrichi — retourne [] si erreur pour éviter les crashes
+  // ── Abonnement Stripe ──────────────────────────────────────────────────────
+  readonly subscriptionResource = rxResource({
+    stream: () =>
+      this.http.get<SubscriptionResponse>('/api/billing/subscription', {
+        headers: this.authHeaders,
+        withCredentials: true,
+      }),
+  });
+
+  // ── Profil utilisateur (pour le nom affiché) ───────────────────────────────
+  readonly profileResource = rxResource({
+    stream: () =>
+      this.http.get<UserProfile>('/api/profile', {
+        headers: this.authHeaders,
+        withCredentials: true,
+      }),
+  });
+
+  // ── Computed ───────────────────────────────────────────────────────────────
+
+  readonly displayName = computed<string>(() => {
+    const profile = this.profileResource.value();
+    if (profile?.name) return profile.name;
+    const email = (this.auth.user()?.['email'] as string | undefined) ?? '';
+    return email.split('@')[0] || 'utilisateur';
+  });
+
+  readonly planName = computed<string>(() => {
+    const sub = this.subscriptionResource.value()?.subscription;
+    if (!sub) return 'Free';
+    if (sub.status === 'active' || sub.status === 'trialing') return sub.planName;
+    return 'Free';
+  });
+
   readonly apps = computed<AppCard[]>(() => {
     if (this.catalogResource.error()) return [];
     const raw: any = this.catalogResource.value() ?? [];
@@ -110,13 +164,13 @@ export class DashboardComponent {
     },
     {
       label: 'Abonnement',
-      value: 'Pro',
+      value: this.subscriptionResource.isLoading() ? '…' : this.planName(),
       icon: 'workspace_premium',
       color: 'var(--warning)',
     },
     {
-      label: 'Requêtes / mois',
-      value: '127',
+      label: 'Apps disponibles',
+      value: this.catalogResource.isLoading() ? '…' : String(this.apps().length),
       icon: 'trending_up',
       color: 'var(--success)',
     },
