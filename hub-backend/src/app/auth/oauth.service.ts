@@ -1,8 +1,8 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createRemoteJWKSet, exportJWK, jwtVerify, SignJWT } from 'jose';
-import { createPrivateKey, randomUUID, createHash } from 'node:crypto';
+import { createPrivateKey, randomUUID } from 'node:crypto';
 import { URL } from 'node:url';
-import { sha256, ensureRsaKeyPair, sha256Base64Url } from './crypto';
+import { sha256, ensureRsaKeyPair, sha256Base64Url, hashPasswordScrypt, verifyPassword } from './crypto';
 import { AuthConfig, loadAuthConfig } from './auth.config';
 import { RefreshTokenRecord, TokenStore } from './token-store';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -28,10 +28,6 @@ export interface ValidateAuthCodeInput {
   clientId: string;
 }
 
-/** Hash SHA-256 d'un mot de passe — à remplacer par bcrypt en production */
-function hashPassword(password: string): string {
-  return createHash('sha256').update(password).digest('hex');
-}
 
 @Injectable()
 export class OAuthService {
@@ -101,8 +97,14 @@ export class OAuthService {
       throw new UnauthorizedException('use_google_login');
     }
 
-    const hash = hashPassword(password);
-    if (hash !== dbUser.password_hash) throw new UnauthorizedException('Invalid credentials');
+    const { ok, legacy } = verifyPassword(password, dbUser.password_hash);
+    if (!ok) throw new UnauthorizedException('Invalid credentials');
+
+    // Migration transparente : si l'ancien SHA-256 était utilisé, on re-hache avec scrypt
+    if (legacy) {
+      const newHash = hashPasswordScrypt(password);
+      await this.supabase.updateUserPassword(dbUser.id, newHash);
+    }
 
     return { id: dbUser.id, email: dbUser.email, role: dbUser.role ?? 'customer' };
   }
@@ -200,7 +202,7 @@ export class OAuthService {
   async registerUser(email: string, password: string, role = 'customer'): Promise<UserRecord> {
     const existing = await this.supabase.findUserByEmail(email);
     if (existing) throw new ConflictException('email_already_exists');
-    const hash = hashPassword(password);
+    const hash = hashPasswordScrypt(password);
     const user = await this.supabase.createUser(email, hash, role);
     return { id: user.id, email: user.email, role: user.role ?? role };
   }
@@ -231,7 +233,7 @@ export class OAuthService {
     if (record.used_at) throw new UnauthorizedException('token_already_used');
     if (new Date(record.expires_at) < new Date()) throw new UnauthorizedException('token_expired');
 
-    const passwordHash = hashPassword(newPassword);
+    const passwordHash = hashPasswordScrypt(newPassword);
     await this.supabase.updateUserPassword(record.user_id, passwordHash);
     await this.supabase.markResetTokenUsed(record.id);
   }
