@@ -9,8 +9,17 @@ export interface DbUser {
   password_hash: string | null;
   provider: string;
   role: string;
+  name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProfileUpdate {
+  name?: string;
+  avatar_url?: string;
+  phone?: string;
 }
 
 export interface DbPasswordResetToken {
@@ -148,6 +157,24 @@ export class SupabaseService implements OnModuleInit {
       password_hash: passwordHash,
       updated_at: new Date().toISOString(),
     });
+  }
+
+  async updateUserProfile(userId: string, data: ProfileUpdate): Promise<DbUser> {
+    const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (data.name !== undefined) payload['name'] = data.name;
+    if (data.avatar_url !== undefined) payload['avatar_url'] = data.avatar_url;
+    if (data.phone !== undefined) payload['phone'] = data.phone;
+
+    const res = await fetch(`${this.baseUrl}/users?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: this.headers({ Prefer: 'return=representation' }),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Supabase PATCH /users → ${res.status}: ${await res.text()}`);
+    const rows = await res.json() as DbUser[];
+    const user = rows[0];
+    if (!user) throw new Error('Profile update returned no row');
+    return user;
   }
 
   // ── Password reset tokens ─────────────────────────────────────────────────

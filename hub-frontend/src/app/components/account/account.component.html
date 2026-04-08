@@ -5,41 +5,121 @@
   </div>
 
   @if (auth.isAuthenticated()) {
-    <mat-card class="profile-card" appearance="outlined">
-      <mat-card-content>
-        <div class="profile-header">
-          <div class="avatar">
-            <mat-icon>person</mat-icon>
-          </div>
-          <div class="profile-info">
-            <h3>{{ (auth.user()?.['email']?.toString() ?? 'utilisateur').split('@')[0] }}</h3>
-            <span class="profile-email">{{ auth.user()?.['email'] ?? '—' }}</span>
-          </div>
-        </div>
 
-        <mat-divider></mat-divider>
+    @if (profileResource.isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    } @else if (profileResource.value(); as profile) {
 
-        <div class="profile-details">
-          <div class="detail-row">
-            <span class="detail-label">Adresse email</span>
-            <span class="detail-value">{{ auth.user()?.['email'] ?? '—' }}</span>
+      <mat-card class="profile-card" appearance="outlined">
+        <mat-card-content>
+          <div class="profile-header">
+            <div class="avatar">
+              @if (profile.avatarUrl) {
+                <img [src]="profile.avatarUrl" [alt]="displayName(profile)" class="avatar-img" />
+              } @else {
+                <mat-icon>person</mat-icon>
+              }
+            </div>
+            <div class="profile-info">
+              <h3>{{ displayName(profile) }}</h3>
+              <span class="profile-email">{{ profile.email }}</span>
+            </div>
           </div>
-          <div class="detail-row">
-            <span class="detail-label">Abonnement</span>
-            <span class="detail-value">Plan Pro</span>
-          </div>
-        </div>
 
-        <mat-divider></mat-divider>
+          <mat-divider></mat-divider>
 
-        <div class="profile-actions">
-          <button mat-stroked-button class="logout-btn" (click)="logout()">
-            <mat-icon>logout</mat-icon>
-            Se déconnecter
-          </button>
-        </div>
-      </mat-card-content>
-    </mat-card>
+          @if (!editing()) {
+            <div class="profile-details">
+              <div class="detail-row">
+                <span class="detail-label">Adresse email</span>
+                <span class="detail-value">{{ profile.email }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Nom affiché</span>
+                <span class="detail-value">{{ profile.name || '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Téléphone</span>
+                <span class="detail-value">{{ profile.phone || '—' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Rôle</span>
+                <span class="detail-value">{{ profile.role }}</span>
+              </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            @if (saveSuccess()) {
+              <div class="success-banner">
+                <mat-icon>check_circle</mat-icon>
+                Profil mis à jour avec succès.
+              </div>
+            }
+
+            <div class="profile-actions">
+              <button mat-stroked-button (click)="startEditing()">
+                <mat-icon>edit</mat-icon>
+                Modifier le profil
+              </button>
+              <button mat-stroked-button class="logout-btn" (click)="logout()">
+                <mat-icon>logout</mat-icon>
+                Se déconnecter
+              </button>
+            </div>
+
+          } @else {
+            <form class="edit-form" (ngSubmit)="saveProfile()">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Nom affiché</mat-label>
+                <input matInput [ngModel]="editName()" (ngModelChange)="editName.set($event)" name="name" placeholder="Jean Dupont" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Téléphone</mat-label>
+                <input matInput [ngModel]="editPhone()" (ngModelChange)="editPhone.set($event)" name="phone" placeholder="+33 6 12 34 56 78" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>URL de l'avatar</mat-label>
+                <input matInput [ngModel]="editAvatarUrl()" (ngModelChange)="editAvatarUrl.set($event)" name="avatarUrl" placeholder="https://..." />
+              </mat-form-field>
+
+              @if (saveError()) {
+                <div class="error-banner">
+                  <mat-icon>error_outline</mat-icon>
+                  {{ saveError() }}
+                </div>
+              }
+
+              <div class="profile-actions">
+                <button mat-flat-button type="submit" [disabled]="saving()" class="save-btn">
+                  @if (saving()) {
+                    <mat-spinner diameter="18"></mat-spinner>
+                  } @else {
+                    <mat-icon>save</mat-icon>
+                  }
+                  Enregistrer
+                </button>
+                <button mat-stroked-button type="button" (click)="cancelEditing()" [disabled]="saving()">
+                  Annuler
+                </button>
+              </div>
+            </form>
+          }
+
+        </mat-card-content>
+      </mat-card>
+
+    } @else {
+      <div class="error-banner">
+        <mat-icon>error_outline</mat-icon>
+        Impossible de charger le profil.
+      </div>
+    }
+
   } @else {
     <mat-card class="not-logged-card" appearance="outlined">
       <mat-card-content>

@@ -133,6 +133,51 @@
   border-radius: var(--radius-sm) !important;
 }
 
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.edit-form {
+  padding: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.save-btn {
+  background: var(--accent) !important;
+  color: white !important;
+  border-radius: var(--radius-sm) !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--success-muted, rgba(34,197,94,0.1));
+  color: var(--success, #22c55e);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-top: 16px;
+}
+
 .error-banner {
   display: flex;
   align-items: center;
